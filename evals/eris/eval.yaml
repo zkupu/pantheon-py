@@ -1,0 +1,42 @@
+version: "1"
+skill: ../../.agents/skills/eris
+defaults:
+  agent: nim
+  provider: local
+  trials: 5
+  timeout: 120
+  threshold: 0.8
+tasks:
+  - name: challenge-microservices-decision
+    instruction: |
+      Read `decision.md` — a team's plan to adopt microservices.
+
+      Write `challenge.md` that stress-tests this decision:
+      1. Identify load-bearing assumptions (what must be true for this to work?)
+      2. Ask at least 5 pointed questions the team hasn't answered
+      3. Challenge the expected benefits with counterarguments
+      4. Suggest what evidence would change your mind
+      5. Propose a simpler alternative they should consider first
+
+      Be sharp but constructive. Poke holes, don't block.
+
+      IMPORTANT: You MUST use the provided tools to create output files. Do not just describe what you would write — actually create the files.
+    workspace:
+      - src: fixtures/decision.md
+        dest: decision.md
+    graders:
+      - type: deterministic
+        run: bash graders/check.sh
+        weight: 0.6
+      - type: llm_rubric
+        rubric: |
+          Challenge Quality (0-0.5):
+          - Questions are pointed and specific (not generic)?
+          - Identifies real risks (network latency, data consistency, ops overhead)?
+          - Challenges the team size vs. microservice count?
+
+          Constructiveness (0-0.5):
+          - Proposes alternatives (modular monolith, strangler fig)?
+          - Suggests evidence/metrics to validate the decision?
+          - Tone is sharp but not destructive?
+        weight: 0.4

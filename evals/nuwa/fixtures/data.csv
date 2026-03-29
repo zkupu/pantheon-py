@@ -1,0 +1,7 @@
+id,name,email,role,active
+1,Ada Lovelace,ada@example.com,engineer,true
+2,Grace Hopper,grace@example.com,lead,true
+3,Margaret Hamilton,,engineer,true
+4,Katherine Johnson,katherine@example.com,,false
+5,Hedy Lamarr,hedy@example.com,inventor,
+6,Annie Easley,annie@example.com,scientist,true

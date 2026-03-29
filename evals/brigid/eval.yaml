@@ -1,0 +1,33 @@
+version: "1"
+skill: ../../.agents/skills/brigid
+defaults:
+  agent: nim
+  provider: local
+  trials: 5
+  timeout: 120
+  threshold: 0.8
+tasks:
+  - name: implement-concurrent-counter
+    instruction: |
+      Read `main.go` for the specification. Create a file called `counter.go` implementing a concurrent-safe counter with: NewCounter() *Counter, Increment(), Decrement(), Value() int, Reset(). Use sync.Mutex for thread safety. Use `package main`. Use stdlib only.
+
+      IMPORTANT: You MUST use the provided tools to create output files. Do not just describe what you would write — actually create the files.
+    workspace:
+      - src: fixtures/main.go
+        dest: main.go
+    graders:
+      - type: deterministic
+        run: bash graders/check.sh
+        weight: 0.7
+      - type: llm_rubric
+        rubric: |
+          Go Idioms (0-0.5):
+          - Uses sync.Mutex or sync/atomic correctly?
+          - Interface-driven design?
+          - Proper Go naming conventions?
+
+          Test Quality (0-0.5):
+          - Tests concurrent access with goroutines?
+          - Uses testing.T properly?
+          - Race condition coverage?
+        weight: 0.3

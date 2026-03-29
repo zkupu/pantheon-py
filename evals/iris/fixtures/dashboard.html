@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Sales Dashboard — Q4 2025</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 960px; margin: 2rem auto; background: #f5f5f5; }
+    .header { background: #1a1a2e; color: white; padding: 1.5rem 2rem; border-radius: 8px 8px 0 0; }
+    .header h1 { margin: 0; font-size: 1.5rem; }
+    .header .subtitle { color: #aaa; font-size: 0.9rem; }
+    .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; padding: 1.5rem; background: white; }
+    .card { background: #f8f9fa; border-radius: 8px; padding: 1.2rem; text-align: center; }
+    .card .value { font-size: 2rem; font-weight: 700; color: #1a1a2e; }
+    .card .label { font-size: 0.8rem; color: #666; text-transform: uppercase; margin-top: 0.3rem; }
+    .card .trend { font-size: 0.85rem; margin-top: 0.5rem; }
+    .card .trend.up { color: #2ecc71; }
+    .card .trend.down { color: #e74c3c; }
+    .chart-section { background: white; padding: 1.5rem; border-top: 1px solid #eee; }
+    .chart-section h2 { font-size: 1.1rem; color: #333; margin-top: 0; }
+    table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+    th { text-align: left; padding: 0.6rem; border-bottom: 2px solid #1a1a2e; font-size: 0.8rem; text-transform: uppercase; color: #666; }
+    td { padding: 0.6rem; border-bottom: 1px solid #eee; }
+    .bar { height: 20px; background: #3498db; border-radius: 4px; display: inline-block; vertical-align: middle; }
+    .footer { background: white; padding: 1rem 1.5rem; border-radius: 0 0 8px 8px; border-top: 1px solid #eee; font-size: 0.75rem; color: #999; }
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 0.5rem; }
+    .status-dot.green { background: #2ecc71; }
+    .status-dot.yellow { background: #f1c40f; }
+    .status-dot.red { background: #e74c3c; }
+    .nav { display: flex; gap: 1rem; margin-top: 0.5rem; }
+    .nav a { color: #7f8c8d; text-decoration: none; font-size: 0.85rem; }
+    .nav a.active { color: white; font-weight: 600; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>Sales Dashboard</h1>
+    <div class="subtitle">Q4 2025 — Last updated: Dec 31, 2025 11:45 PM UTC</div>
+    <nav class="nav">
+      <a href="#">Overview</a>
+      <a href="#" class="active">Sales</a>
+      <a href="#">Products</a>
+      <a href="#">Regions</a>
+    </nav>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <div class="value">$2.4M</div>
+      <div class="label">Total Revenue</div>
+      <div class="trend up">▲ 18.3% vs Q3</div>
+    </div>
+    <div class="card">
+      <div class="value">12,847</div>
+      <div class="label">Orders</div>
+      <div class="trend up">▲ 12.1% vs Q3</div>
+    </div>
+    <div class="card">
+      <div class="value">$186</div>
+      <div class="label">Avg Order Value</div>
+      <div class="trend up">▲ 5.5% vs Q3</div>
+    </div>
+    <div class="card">
+      <div class="value">3.2%</div>
+      <div class="label">Return Rate</div>
+      <div class="trend down">▼ 0.8% vs Q3</div>
+    </div>
+  </div>
+
+  <div class="chart-section">
+    <h2>Revenue by Product Category</h2>
+    <table>
+      <thead>
+        <tr><th>Category</th><th>Revenue</th><th>Share</th><th></th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Electronics</td><td>$892,000</td><td>37.2%</td><td><span class="bar" style="width:186px"></span></td></tr>
+        <tr><td>Apparel</td><td>$624,000</td><td>26.0%</td><td><span class="bar" style="width:130px"></span></td></tr>
+        <tr><td>Home &amp; Garden</td><td>$408,000</td><td>17.0%</td><td><span class="bar" style="width:85px"></span></td></tr>
+        <tr><td>Sports</td><td>$312,000</td><td>13.0%</td><td><span class="bar" style="width:65px"></span></td></tr>
+        <tr><td>Books</td><td>$164,000</td><td>6.8%</td><td><span class="bar" style="width:34px"></span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="chart-section">
+    <h2>Regional Performance</h2>
+    <table>
+      <thead>
+        <tr><th>Region</th><th>Revenue</th><th>Orders</th><th>Status</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>North America</td><td>$1,080,000</td><td>5,782</td><td><span class="status-dot green"></span>On Track</td></tr>
+        <tr><td>Europe</td><td>$720,000</td><td>3,854</td><td><span class="status-dot green"></span>On Track</td></tr>
+        <tr><td>Asia Pacific</td><td>$384,000</td><td>2,056</td><td><span class="status-dot yellow"></span>Below Target</td></tr>
+        <tr><td>Latin America</td><td>$216,000</td><td>1,155</td><td><span class="status-dot red"></span>At Risk</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="footer">
+    Data source: Warehouse ETL Pipeline · Refresh interval: 15 min · Contact: analytics@company.com
+  </div>
+</body>
+</html>

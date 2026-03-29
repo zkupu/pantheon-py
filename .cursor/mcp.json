@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "screenshot": {
+      "command": "npx",
+      "args": ["@kirill-markin/mcp-screenshots-cursor-ide@1.0.0"]
+    }
+  }
+}

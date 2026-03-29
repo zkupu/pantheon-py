@@ -1,0 +1,99 @@
+version: "1"
+skill: ../../.agents/skills/iris
+defaults:
+  agent: nim
+  provider: local
+  trials: 5
+  timeout: 120
+  threshold: 0.8
+tasks:
+  - name: analyze-dashboard
+    instruction: |
+      Read `dashboard.html` — an HTML file for a sales dashboard web page.
+
+      Analyze the visual structure and data content of this page as if you were
+      looking at a rendered screenshot. Produce a structured analysis saved as
+      `analysis.md` that includes:
+
+      1. **Visual Description** — Describe the page layout, color scheme, and
+         visual hierarchy as if writing alt text for documentation
+      2. **Data Extraction** — Extract all numerical data from the dashboard:
+         revenue figures, order counts, percentages, and trends
+      3. **UI Components** — Identify all UI components: cards, tables, navigation,
+         headers, status indicators
+      4. **Documentation Caption** — Write a caption suitable for including this
+         screenshot in technical documentation
+      5. **Issues & Recommendations** — Note any accessibility concerns, layout
+         issues, or improvement suggestions visible in the design
+
+      You MUST create the file analysis.md with your complete analysis.
+
+      IMPORTANT: You MUST use the provided tools to create output files.
+    workspace:
+      - src: fixtures/dashboard.html
+        dest: dashboard.html
+    graders:
+      - type: deterministic
+        run: bash graders/check.sh
+        weight: 0.6
+      - type: llm_rubric
+        rubric: |
+          Data Accuracy (0-0.4):
+          - Did the agent extract the correct revenue ($2.4M total)?
+          - Did it identify all 5 product categories with correct shares?
+          - Did it note the regional performance statuses (on track, below target, at risk)?
+
+          Visual Analysis (0-0.3):
+          - Did it describe the layout (header, 4 metric cards, 2 tables)?
+          - Did it identify the color scheme and status indicators?
+          - Did it note the navigation tabs?
+
+          Documentation Quality (0-0.3):
+          - Is the alt text/caption suitable for documentation?
+          - Are recommendations actionable?
+          - Is the output well-structured?
+        weight: 0.4
+
+  - name: analyze-error-page
+    instruction: |
+      Read `error-page.html` — an HTML file for a 500 error page.
+
+      Analyze this page as if examining a screenshot captured during an incident.
+      Produce a structured analysis saved as `analysis.md` that includes:
+
+      1. **Error Identification** — What error is displayed? HTTP status code?
+      2. **Stack Trace Analysis** — Extract and analyze the stack trace visible
+         on the page. What's the root cause?
+      3. **UI Assessment** — Describe the error page's user experience. Is the
+         error message helpful? Are the action buttons appropriate?
+      4. **Incident Documentation** — Write content suitable for an incident
+         report or post-mortem, based on what's visible in the page
+      5. **Recommendations** — Suggest fixes for both the bug and the error
+         page UX
+
+      You MUST create the file analysis.md with your complete analysis.
+
+      IMPORTANT: You MUST use the provided tools to create output files.
+    workspace:
+      - src: fixtures/error-page.html
+        dest: error-page.html
+    graders:
+      - type: deterministic
+        run: bash graders/check-error.sh
+        weight: 0.6
+      - type: llm_rubric
+        rubric: |
+          Error Analysis (0-0.4):
+          - Did the agent identify the 500 status code?
+          - Did it extract the TypeError about 'userId' being undefined?
+          - Did it identify AuthMiddleware.validate as the failing location?
+
+          Root Cause (0-0.3):
+          - Did the agent explain why 'Cannot read properties of undefined' occurs?
+          - Did it suggest a null/undefined check or validation fix?
+
+          Documentation Value (0-0.3):
+          - Could the analysis be used in an incident report?
+          - Are the UX recommendations for the error page constructive?
+          - Is the request ID (req_a8f3b2c1) noted for traceability?
+        weight: 0.4

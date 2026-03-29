@@ -1,0 +1,24 @@
+app:
+  name: pantheon-service
+  version: 2.4.1
+
+database:
+  primary:
+    host: db-primary.pantheon.internal
+    port: 5432
+    name: pantheon_prod
+    credentials:
+      user: svc_pantheon
+      password_env: DB_PASSWORD
+  replica:
+    host: db-replica.pantheon.internal
+    port: 5432
+    name: pantheon_prod
+
+logging:
+  level: info
+  output: stdout
+
+features:
+  rate_limiting: true
+  audit_log: true

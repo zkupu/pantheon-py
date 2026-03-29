@@ -1,0 +1,71 @@
+version: "1"
+
+skill: ../../.agents/skills/themis
+
+defaults:
+  agent: claude
+  provider: docker
+  trials: 5
+  timeout: 120
+  threshold: 0.8
+  docker:
+    base: python:3.12-slim
+    setup: pip install pytest
+
+tasks:
+  - name: write-calculator-tests
+    instruction: |
+      You have `calculator.py` — a `Calculator` class with chainable arithmetic
+      operations: `add`, `subtract`, `multiply`, `divide`, `reset`.
+
+      It also exposes a `value` property (current result) and `history` property
+      (list of operations performed).
+
+      Write a comprehensive test file called `test_calculator.py` using pytest.
+
+      Your tests must cover:
+      1. **Basic operations**: each of add, subtract, multiply, divide with
+         positive, negative, and zero values
+      2. **Division by zero**: verify `ZeroDivisionError` is raised
+      3. **Chaining**: operations can be chained (e.g., `calc.add(5).multiply(2)`)
+      4. **History tracking**: the history property records operations in order
+      5. **Reset**: clears value to 0 and empties history
+      6. **Initial state**: default value is 0.0, history is empty
+      7. **Type handling**: operations work with int and float arguments
+
+      You must have at least 8 distinct test functions. Use descriptive names
+      that explain the scenario being tested. All tests must pass.
+
+      You MUST create the file test_calculator.py with your test code.
+
+      IMPORTANT: You MUST use the provided tools to create output files. Do not just describe what you would write — actually create the files.
+
+    workspace:
+      - src: fixtures/calculator.py
+        dest: calculator.py
+
+    graders:
+      - type: deterministic
+        run: bash graders/check.sh
+        weight: 0.7
+
+      - type: llm_rubric
+        rubric: |
+          Evaluate the test quality:
+
+          Structure (0-0.3):
+          - Clear Arrange-Act-Assert pattern?
+          - Descriptive test names that explain the scenario?
+          - One logical assertion per test (or closely related group)?
+
+          Coverage (0-0.4):
+          - Tests all 5 operations (add, subtract, multiply, divide, reset)?
+          - Tests error cases (division by zero)?
+          - Tests chaining and history?
+          - Tests edge cases (zero, negative numbers, floats)?
+
+          Craft (0-0.3):
+          - Uses pytest idioms (pytest.raises, fixtures, parametrize)?
+          - No unnecessary setup or teardown?
+          - Would a senior engineer approve this test suite?
+        weight: 0.3

@@ -1,0 +1,42 @@
+version: "1"
+skill: ../../.agents/skills/maat
+defaults:
+  agent: nim
+  provider: local
+  trials: 5
+  timeout: 120
+  threshold: 0.8
+tasks:
+  - name: assess-skip-tests-proposal
+    instruction: |
+      Read `proposal.md` — a proposal to skip unit tests for an MVP.
+
+      Write `assessment.md` evaluating this decision against engineering values:
+      1. Is skipping tests the right call? Give a clear recommendation.
+      2. Assess the cultural risk — what precedent does this set?
+      3. Evaluate the technical debt implications
+      4. Propose an alternative or compromise if you disagree
+      5. Consider speed vs. quality tradeoff honestly
+
+      Be direct. Take a position. Don't hedge with "it depends."
+
+      IMPORTANT: You MUST use the provided tools to create output files. Do not just describe what you would write — actually create the files.
+    workspace:
+      - src: fixtures/proposal.md
+        dest: proposal.md
+    graders:
+      - type: deterministic
+        run: bash graders/check.sh
+        weight: 0.6
+      - type: llm_rubric
+        rubric: |
+          Values Alignment (0-0.5):
+          - Takes a clear position (not wishy-washy)?
+          - Addresses the culture/precedent concern?
+          - Balances speed and quality honestly?
+
+          Practical Wisdom (0-0.5):
+          - Proposes a realistic compromise?
+          - Considers the team's actual constraints?
+          - Would a senior engineering leader find this useful?
+        weight: 0.4

@@ -1,0 +1,56 @@
+version: "1"
+
+skill: ../../.agents/skills/demeter
+
+defaults:
+  agent: claude
+  provider: docker
+  trials: 5
+  timeout: 120
+  threshold: 0.8
+  docker:
+    base: python:3.12-slim
+
+tasks:
+  - name: extract-config-write-migration
+    instruction: |
+      You have a service configuration file at `config.yaml`.
+
+      1. Read `config.yaml` and find the primary database host.
+      2. Create a file called `migration.sql` containing:
+         - A comment header with the connection target: `-- Target: <host>:<port>`
+         - A `CREATE TABLE users` statement with these columns:
+           - `id` (serial primary key)
+           - `email` (varchar, not null, unique)
+           - `created_at` (timestamp, default now)
+
+      Do not install any packages. Use only shell commands and file operations.
+
+      IMPORTANT: You MUST use the provided tools to create output files. Do not just describe what you would write — actually create the files.
+
+    workspace:
+      - src: fixtures/config.yaml
+        dest: config.yaml
+
+    graders:
+      - type: deterministic
+        run: bash graders/check.sh
+        weight: 0.7
+
+      - type: llm_rubric
+        rubric: |
+          Evaluate the agent's execution:
+
+          Task Completion (0-0.4):
+          - Did the agent read config.yaml before writing the migration?
+          - Is the SQL syntactically correct?
+          - Does the comment header contain the correct host and port?
+
+          Efficiency (0-0.3):
+          - Completed without unnecessary steps?
+          - No package installations or over-engineering?
+
+          Precision (0-0.3):
+          - Exactly the columns requested, nothing extra?
+          - Correct SQL types and constraints?
+        weight: 0.3

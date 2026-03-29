@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Error — Application</title>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 0; background: #fafafa; display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+    .error-container { text-align: center; max-width: 480px; padding: 2rem; }
+    .error-code { font-size: 6rem; font-weight: 800; color: #e74c3c; line-height: 1; margin-bottom: 0.5rem; }
+    .error-title { font-size: 1.5rem; font-weight: 600; color: #2c3e50; margin-bottom: 1rem; }
+    .error-message { color: #7f8c8d; line-height: 1.6; margin-bottom: 2rem; }
+    .error-details { background: #f8f9fa; border-radius: 8px; padding: 1rem; text-align: left; font-family: monospace; font-size: 0.85rem; color: #c0392b; margin-bottom: 1.5rem; overflow-x: auto; }
+    .btn { display: inline-block; padding: 0.7rem 1.5rem; border-radius: 6px; text-decoration: none; font-weight: 500; font-size: 0.9rem; }
+    .btn-primary { background: #3498db; color: white; margin-right: 0.5rem; }
+    .btn-secondary { background: #ecf0f1; color: #2c3e50; }
+    .timestamp { color: #bdc3c7; font-size: 0.75rem; margin-top: 2rem; }
+  </style>
+</head>
+<body>
+  <div class="error-container">
+    <div class="error-code">500</div>
+    <div class="error-title">Internal Server Error</div>
+    <div class="error-message">
+      The server encountered an unexpected condition that prevented it from fulfilling the request. Our team has been notified.
+    </div>
+    <div class="error-details">
+      TypeError: Cannot read properties of undefined (reading 'userId')<br>
+      &nbsp;&nbsp;at AuthMiddleware.validate (/app/src/middleware/auth.js:47)<br>
+      &nbsp;&nbsp;at Layer.handle [as handle_request] (/app/node_modules/express/lib/router/layer.js:95)<br>
+      &nbsp;&nbsp;at next (/app/node_modules/express/lib/router/route.js:144)
+    </div>
+    <div>
+      <a href="/" class="btn btn-primary">Go Home</a>
+      <a href="javascript:history.back()" class="btn btn-secondary">Go Back</a>
+    </div>
+    <div class="timestamp">Request ID: req_a8f3b2c1 · Timestamp: 2025-12-15T14:23:07Z</div>
+  </div>
+</body>
+</html>

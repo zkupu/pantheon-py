@@ -1,0 +1,238 @@
+=== Ultra Run — Mon Mar 16 15:03:06 PDT 2026 ===
+
+--- themis (started 15:03:06) ---
+
+skillgrade
+
+  skill       ../../.agents/skills/themis
+  output      /tmp/skillgrade/themis
+
+── write-calculator-tests ───────────────────────────────────
+    agent nim  provider local  trials 5
+
+    1/5    setting up environment
+    1/5    running agent
+    1/5    grading (deterministic 1/2)
+    1/5    grading (llm_rubric 2/2)
+[K    1/5    PASS  0.50  126.7s  20 cmds
+    2/5    setting up environment
+    2/5    running agent
+    2/5    grading (deterministic 1/2)
+    2/5    grading (llm_rubric 2/2)
+[K    2/5    FAIL  0.35  113.3s  20 cmds
+    3/5    setting up environment
+    3/5    running agent
+    3/5    grading (deterministic 1/2)
+    3/5    grading (llm_rubric 2/2)
+[K    3/5    FAIL  0.35  86.8s  20 cmds
+    4/5    setting up environment
+    4/5    running agent
+    4/5    grading (deterministic 1/2)
+    4/5    grading (llm_rubric 2/2)
+[K    4/5    FAIL  0.35  110.4s  20 cmds
+    5/5    setting up environment
+    5/5    running agent
+    5/5    grading (deterministic 1/2)
+    5/5    grading (llm_rubric 2/2)
+[K    5/5    FAIL  0.35  89.4s  20 cmds
+    trial 1 llm_rubric: The agent attempted to cover all required operations and cases but had syntax errors preventing test execution. Structur
+    trial 2 llm_rubric: Failed to parse LLM response: 
+    trial 3 llm_rubric: Failed to parse LLM response: 
+    trial 4 llm_rubric: Failed to parse LLM response: 
+    trial 5 llm_rubric: Failed to parse LLM response: 
+
+── Results (smoke test) ─────────────────────────────────────
+    Pass Rate    38.0%
+    pass@5      100.0% ◂
+    pass^5        0.0%
+--- themis: EXIT 0 ---
+
+--- aphrodite (started 15:11:53) ---
+
+skillgrade
+
+  skill       ../../.agents/skills/aphrodite
+  output      /tmp/skillgrade/aphrodite
+
+── improve-error-messages ───────────────────────────────────
+    agent nim  provider local  trials 5
+
+    1/5    setting up environment
+    1/5    running agent
+    1/5    grading (deterministic 1/2)
+    1/5    grading (llm_rubric 2/2)
+[K    1/5    FAIL  0.17  89.9s  1 cmds
+    2/5    setting up environment
+    2/5    running agent
+    2/5    grading (deterministic 1/2)
+    2/5    grading (llm_rubric 2/2)
+[K    2/5    FAIL  0.32  87.6s  1 cmds
+    3/5    setting up environment
+    3/5    running agent
+    3/5    grading (deterministic 1/2)
+    3/5    grading (llm_rubric 2/2)
+[K    3/5    FAIL  0.17  96.4s  1 cmds
+    4/5    setting up environment
+    4/5    running agent
+    4/5    grading (deterministic 1/2)
+    4/5    grading (llm_rubric 2/2)
+[K    4/5    FAIL  0.17  68.3s  1 cmds
+    5/5    setting up environment
+    5/5    running agent
+    5/5    grading (deterministic 1/2)
+    5/5    grading (llm_rubric 2/2)
+[K    5/5    FAIL  0.17  29.3s  1 cmds
+    trial 1 llm_rubric: Failed to parse LLM response: 
+    trial 2 llm_rubric: The agent provided clear, actionable, and professional messages (0.5 for User Experience) but failed to create the outpu
+    trial 3 llm_rubric: Failed to parse LLM response: {"score": 0.5, "reasoning": "The agent provided clear, actionable, and professional messag
+    trial 4 llm_rubric: The agent failed to create the improved_errors.py file due to a syntax error (trailing comma in the ERRORS dict), result
+    trial 5 llm_rubric: The agent failed to create the improved_errors.py file due to a syntax error (trailing comma in the ERRORS dict), result
+
+── Results (smoke test) ─────────────────────────────────────
+    Pass Rate    20.5%
+    pass@5        0.0% ◂
+    pass^5        0.0%
+--- aphrodite: EXIT 0 ---
+
+--- calliope (started 15:18:05) ---
+
+skillgrade
+
+  skill       ../../.agents/skills/calliope
+  output      /tmp/skillgrade/calliope
+
+── design-code-review-prompt ────────────────────────────────
+    agent nim  provider local  trials 5
+
+    1/5    setting up environment
+    1/5    running agent
+    1/5    grading (deterministic 1/2)
+    1/5    grading (llm_rubric 2/2)
+[K    1/5    PASS  1.00  30.1s  4 cmds
+    2/5    setting up environment
+    2/5    running agent
+    2/5    grading (deterministic 1/2)
+    2/5    grading (llm_rubric 2/2)
+[K    2/5    PASS  1.00  30.6s  5 cmds
+    3/5    setting up environment
+    3/5    running agent
+    3/5    grading (deterministic 1/2)
+    3/5    grading (llm_rubric 2/2)
+[K    3/5    PASS  0.60  35.5s  20 cmds
+    4/5    setting up environment
+    4/5    running agent
+    4/5    grading (deterministic 1/2)
+    4/5    grading (llm_rubric 2/2)
+[K    4/5    PASS  1.00  29.8s  9 cmds
+    5/5    setting up environment
+    5/5    running agent
+    5/5    grading (deterministic 1/2)
+    5/5    grading (llm_rubric 2/2)
+[K    5/5    PASS  1.00  33.7s  4 cmds
+    trial 1 llm_rubric: The agent provided a clear role definition, specified a structured output format with severity levels, listed relevant P
+    trial 2 llm_rubric: The agent fully addressed the rubric: clear role definition, structured output, Python-specific anti-patterns (e.g., mut
+    trial 3 llm_rubric: Failed to parse LLM response: 
+    trial 4 llm_rubric: The agent provided a clear role definition, specified a structured JSON output format, listed relevant Python anti-patte
+    trial 5 llm_rubric: Parsed score from truncated LLM response
+
+── Results (smoke test) ─────────────────────────────────────
+    Pass Rate    92.0%
+    pass@5      100.0% ◂
+    pass^5      100.0%
+--- calliope: EXIT 0 ---
+
+--- eris (started 15:20:45) ---
+
+skillgrade
+
+  skill       ../../.agents/skills/eris
+  output      /tmp/skillgrade/eris
+
+── challenge-microservices-decision ─────────────────────────
+    agent nim  provider local  trials 5
+
+    1/5    setting up environment
+    1/5    running agent
+    1/5    grading (deterministic 1/2)
+    1/5    grading (llm_rubric 2/2)
+[K    1/5    PASS  0.60  57.4s  3 cmds
+    2/5    setting up environment
+    2/5    running agent
+    2/5    grading (deterministic 1/2)
+    2/5    grading (llm_rubric 2/2)
+[K    2/5    PASS  0.60  48.6s  20 cmds
+    3/5    setting up environment
+    3/5    running agent
+    3/5    grading (deterministic 1/2)
+    3/5    grading (llm_rubric 2/2)
+[K    3/5    FAIL  0.40  70.6s  1 cmds
+    4/5    setting up environment
+    4/5    running agent
+    4/5    grading (deterministic 1/2)
+    4/5    grading (llm_rubric 2/2)
+[K    4/5    FAIL  0.40  31.8s  1 cmds
+    5/5    setting up environment
+    5/5    running agent
+    5/5    grading (deterministic 1/2)
+    5/5    grading (llm_rubric 2/2)
+[K    5/5    FAIL  0.00  62.0s  1 cmds
+    trial 1 llm_rubric: Failed to parse LLM response: 
+    trial 2 llm_rubric: Failed to parse LLM response: 
+    trial 3 llm_rubric: The agent's challenge.md content thoroughly addresses the rubric: it identifies load-bearing assumptions, poses 5 specif
+    trial 4 llm_rubric: The agent provided a thorough challenge.md that meets all rubric criteria. It identified specific assumptions, posed poi
+    trial 5 llm_rubric: The agent failed to create the challenge.md file as evidenced by the Prior Grader Results (file not found), which means 
+
+── Results (smoke test) ─────────────────────────────────────
+    Pass Rate    40.0%
+    pass@5      100.0% ◂
+    pass^5        1.0%
+--- eris: EXIT 0 ---
+
+--- freya (started 15:25:15) ---
+
+skillgrade
+
+  skill       ../../.agents/skills/freya
+  output      /tmp/skillgrade/freya
+
+── decompose-auth-migration ─────────────────────────────────
+    agent nim  provider local  trials 5
+
+    1/5    setting up environment
+    1/5    running agent
+    1/5    grading (deterministic 1/2)
+    1/5    grading (llm_rubric 2/2)
+[K    1/5    FAIL  0.40  50.3s  1 cmds
+    2/5    setting up environment
+    2/5    running agent
+    2/5    grading (deterministic 1/2)
+    2/5    grading (llm_rubric 2/2)
+[K    2/5    FAIL  0.00  33.8s  1 cmds
+    3/5    setting up environment
+    3/5    running agent
+    3/5    grading (deterministic 1/2)
+    3/5    grading (llm_rubric 2/2)
+[K    3/5    PASS  1.00  47.6s  20 cmds
+    4/5    setting up environment
+    4/5    running agent
+    4/5    grading (deterministic 1/2)
+    4/5    grading (llm_rubric 2/2)
+[K    4/5    PASS  1.00  45.3s  20 cmds
+    5/5    setting up environment
+    5/5    running agent
+    5/5    grading (deterministic 1/2)
+    5/5    grading (llm_rubric 2/2)
+[K    5/5    PASS  1.00  57.7s  20 cmds
+    trial 1 llm_rubric: The agent provided a detailed plan with concrete subtasks, correct dependencies, logical phases, and addressed all requi
+    trial 2 llm_rubric: The agent failed to create the required plan.md file as evidenced by the Prior Grader Results (all checks failed, includ
+    trial 3 llm_rubric: The agent provided a well-structured plan with concrete subtasks, clear dependencies, and proper grouping into phases. I
+    trial 4 llm_rubric: The agent provided a detailed plan with concrete subtasks, clear dependencies, and logical phases. It covered backend, f
+    trial 5 llm_rubric: The agent provided a comprehensive plan with concrete subtasks, logical phases, and clear dependencies. It covered backe
+
+── Results (smoke test) ─────────────────────────────────────
+    Pass Rate    68.0%
+    pass@5      100.0% ◂
+    pass^5        7.8%
+--- freya: EXIT 0 ---
+
+--- pele (started 15:29:10) ---

@@ -1,0 +1,42 @@
+version: "1"
+skill: ../../.agents/skills/seshat
+defaults:
+  agent: nim
+  provider: local
+  trials: 5
+  timeout: 120
+  threshold: 0.8
+tasks:
+  - name: analyze-access-logs
+    instruction: |
+      Analyze `access.log` and write findings to `analysis.md`.
+
+      The log contains HTTP request data. For each finding include:
+      1. Error rate by endpoint (which endpoints have 4xx/5xx responses?)
+      2. Latency analysis (which requests are slow? any timeouts?)
+      3. Traffic patterns (rate limiting hits? bursty traffic?)
+      4. Specific incidents (correlate timestamps with failures)
+      5. Actionable recommendations
+
+      Use specific numbers from the log. Do not make up statistics.
+
+      IMPORTANT: You MUST use the provided tools to create output files. Do not just describe what you would write — actually create the files.
+    workspace:
+      - src: fixtures/access.log
+        dest: access.log
+    graders:
+      - type: deterministic
+        run: bash graders/check.sh
+        weight: 0.6
+      - type: llm_rubric
+        rubric: |
+          Accuracy (0-0.5):
+          - Numbers match the actual log data?
+          - Correctly identifies the /api/users 500 cluster at 08:02?
+          - Notes the 504 timeout on /api/orders at 08:03?
+          - Notes the 429 rate limiting on user_id=113?
+
+          Actionability (0-0.5):
+          - Recommendations are specific and grounded in data?
+          - Prioritized by impact?
+        weight: 0.4

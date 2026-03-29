@@ -1,0 +1,54 @@
+# Skillgrade Eval Template — Pantheon
+#
+# Copy this directory to evals/<skill-name>/ and customize.
+# Run: make eval-init SKILL=<skill-name>
+#
+# Reference: https://github.com/mgechev/skillgrade
+
+version: "1"
+
+# Point to the skill's SKILL.md
+skill: ../../.agents/skills/SKILL_NAME
+
+defaults:
+  agent: claude
+  provider: docker
+  trials: 5
+  timeout: 120
+  threshold: 0.8
+  docker:
+    base: python:3.12-slim
+    setup: |
+      pip install ruff pytest
+
+tasks:
+  - name: TODO-task-name
+    instruction: |
+      Describe what the agent should do. Be specific about:
+      - Input files to read
+      - Output files to create
+      - Expected format and content
+
+    workspace:
+      - src: fixtures/TODO-input-file
+        dest: TODO-input-file
+
+    graders:
+      # Deterministic: check concrete outcomes
+      - type: deterministic
+        run: bash graders/check.sh
+        weight: 0.7
+
+      # LLM rubric: assess qualitative aspects
+      - type: llm_rubric
+        rubric: |
+          Evaluate the agent's approach:
+
+          Correctness (0-0.5):
+          - Did the agent produce the expected output?
+          - Is the output well-formed?
+
+          Approach (0-0.5):
+          - Did the agent follow the skill's methodology?
+          - Was the approach efficient?
+        weight: 0.3

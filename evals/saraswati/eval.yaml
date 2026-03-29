@@ -1,0 +1,45 @@
+version: "1"
+skill: ../../.agents/skills/saraswati
+defaults:
+  agent: nim
+  provider: local
+  trials: 5
+  timeout: 120
+  threshold: 0.8
+tasks:
+  - name: refactor-messy-function
+    instruction: |
+      Refactor `messy.py` into a clean, production-quality file called `refactored.py`.
+
+      Problems to fix:
+      - Uses `range(len(...))` instead of direct iteration
+      - Shadows builtin `type` as a parameter name
+      - `== True` comparison
+      - No type hints
+      - God function doing too much — split into focused functions
+      - Magic strings for status checks
+
+      Keep the same external behavior. Add type hints. Use descriptive names.
+
+      Keep the function name `process_data` so existing callers still work. The refactored module must be importable with `python3 -c 'from refactored import process_data'`.
+
+      IMPORTANT: You MUST use the provided tools to create output files. Do not just describe what you would write — actually create the files.
+    workspace:
+      - src: fixtures/messy.py
+        dest: messy.py
+    graders:
+      - type: deterministic
+        run: bash graders/check.sh
+        weight: 0.7
+      - type: llm_rubric
+        rubric: |
+          Code Quality (0-0.5):
+          - Split into focused functions?
+          - Descriptive parameter/variable names?
+          - No anti-patterns (range(len), == True, shadowed builtins)?
+
+          Maintainability (0-0.5):
+          - Type hints on all functions?
+          - Clean imports?
+          - Would a senior engineer approve this in code review?
+        weight: 0.3

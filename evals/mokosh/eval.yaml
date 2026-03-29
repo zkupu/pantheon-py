@@ -1,0 +1,47 @@
+version: "1"
+skill: ../../.agents/skills/mokosh
+defaults:
+  agent: nim
+  provider: local
+  trials: 5
+  timeout: 120
+  threshold: 0.8
+tasks:
+  - name: write-ci-pipeline
+    instruction: |
+      Create a GitHub Actions CI workflow at `.github/workflows/ci.yml` for a Python project.
+
+      The project uses: Flask, pytest, ruff, mypy (see `requirements.txt`).
+
+      The workflow must:
+      1. Trigger on push to main and pull requests
+      2. Test on Python 3.11 and 3.12
+      3. Install dependencies from requirements.txt
+      4. Run ruff for linting
+      5. Run pytest
+      6. Fail fast — cheapest checks first
+
+      Use only standard GitHub Actions (actions/checkout, actions/setup-python).
+
+      Create the directory structure first with mkdir -p, then write the file. The YAML must be valid.
+
+      IMPORTANT: You MUST use the provided tools to create output files. Do not just describe what you would write — actually create the files.
+    workspace:
+      - src: fixtures/requirements.txt
+        dest: requirements.txt
+    graders:
+      - type: deterministic
+        run: bash graders/check.sh
+        weight: 0.7
+      - type: llm_rubric
+        rubric: |
+          Pipeline Quality (0-0.5):
+          - Triggers on push to main and PRs?
+          - Matrix strategy for Python versions?
+          - Fail-fast ordering (lint before test)?
+
+          Best Practices (0-0.5):
+          - Uses actions/checkout@v4 and setup-python@v5?
+          - Caches pip dependencies?
+          - Clean, readable YAML structure?
+        weight: 0.3

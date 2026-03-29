@@ -1,0 +1,7 @@
+# Skillgrade results
+results/
+*.log
+!seshat/fixtures/access.log
+
+# Never commit API keys
+.env

@@ -1,0 +1,43 @@
+version: "1"
+skill: ../../.agents/skills/freya
+defaults:
+  agent: nim
+  provider: local
+  trials: 5
+  timeout: 120
+  threshold: 0.8
+tasks:
+  - name: decompose-auth-migration
+    instruction: |
+      Read `project.md` — a migration from session-based to JWT authentication.
+
+      Create `plan.md` with a work breakdown that:
+      1. Decomposes the migration into concrete subtasks
+      2. Orders them by dependency (what must come first)
+      3. Groups into phases (e.g., Phase 1: Backend, Phase 2: Frontend)
+      4. Assigns each task to a domain (backend, frontend, security, testing)
+      5. Identifies risks and blockers per phase
+      6. Estimates relative effort (S/M/L) per task
+
+      Be specific — name files, endpoints, and components that need to change.
+
+      IMPORTANT: You MUST use the provided tools to create output files. Do not just describe what you would write — actually create the files.
+    workspace:
+      - src: fixtures/project.md
+        dest: project.md
+    graders:
+      - type: deterministic
+        run: bash graders/check.sh
+        weight: 0.6
+      - type: llm_rubric
+        rubric: |
+          Decomposition Quality (0-0.5):
+          - Subtasks are concrete and actionable (not vague)?
+          - Dependencies are correctly identified?
+          - Phases make logical sense?
+
+          Completeness (0-0.5):
+          - Covers backend, frontend, and testing?
+          - Addresses backward compatibility during rollout?
+          - Identifies risks?
+        weight: 0.4

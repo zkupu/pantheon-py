@@ -1,0 +1,50 @@
+version: "1"
+skill: ../../.agents/skills/athena
+defaults:
+  agent: nim
+  provider: local
+  trials: 5
+  timeout: 120
+  threshold: 0.8
+tasks:
+  - name: design-notification-service
+    instruction: |
+      Read `brief.md` — a project brief for a real-time notification service.
+
+      Produce a technical design document saved as `design.md` that includes:
+      1. Architecture overview with components
+      2. At least 2 design options with tradeoffs
+      3. A recommended approach with justification
+      4. Risk assessment — what could go wrong
+      5. Consideration of the team/timeline/budget constraints
+
+      Be concrete — name specific AWS services, queue technologies, etc.
+      Do not be generic. Ground recommendations in the constraints.
+
+      You MUST create the file design.md with your design document.
+
+      IMPORTANT: You MUST use the provided tools to create output files. Do not just describe what you would write — actually create the files.
+    workspace:
+      - src: fixtures/brief.md
+        dest: brief.md
+    graders:
+      - type: deterministic
+        run: bash graders/check.sh
+        weight: 0.6
+      - type: llm_rubric
+        rubric: |
+          Strategic Depth (0-0.4):
+          - Multiple options with real tradeoffs (not strawmen)?
+          - Clear recommendation with reasoning?
+          - Constraints considered (team size, timeline, budget)?
+
+          Completeness (0-0.3):
+          - Components mapped out?
+          - Data flow described?
+          - Risk assessment with mitigations?
+
+          Practicality (0-0.3):
+          - Specific technology choices (not just "use a queue")?
+          - Feasible within 8 weeks with 3 engineers?
+          - Cost-aware?
+        weight: 0.4

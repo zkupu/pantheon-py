@@ -1,0 +1,45 @@
+version: "1"
+skill: ../../.agents/skills/nisaba
+defaults:
+  agent: nim
+  provider: local
+  trials: 5
+  timeout: 120
+  threshold: 0.8
+tasks:
+  - name: fix-markdown-formatting
+    instruction: |
+      Read `messy.md` — a poorly formatted markdown file. Fix it and save as `clean.md`.
+
+      Fix these issues:
+      - Missing space after `#` in headings
+      - Inconsistent heading capitalization (use Title Case)
+      - Missing blank lines before headings
+      - Extra whitespace in text
+      - Inconsistent list item spacing
+      - Code block missing language tag (should be ```python)
+      - Table formatting (align columns)
+      - Sentences running together (missing line breaks)
+
+      Preserve all content — only fix formatting.
+
+      IMPORTANT: You MUST use the provided tools to create output files. Do not just describe what you would write — actually create the files.
+    workspace:
+      - src: fixtures/messy.md
+        dest: messy.md
+    graders:
+      - type: deterministic
+        run: bash graders/check.sh
+        weight: 0.7
+      - type: llm_rubric
+        rubric: |
+          Formatting Quality (0-0.5):
+          - Consistent heading levels with proper spacing?
+          - Clean list formatting?
+          - Proper code block with language tag?
+
+          Content Preservation (0-0.5):
+          - All original content preserved?
+          - Table data unchanged?
+          - No content added or removed?
+        weight: 0.3

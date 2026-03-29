@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+#
+# Compatibility wrapper for skillgrade <-> Claude Code CLI.
+#
+# Skillgrade passes:  claude "<prompt>" --yes --no-auto-update
+# Claude Code v2 expects:  claude -p --dangerously-skip-permissions "<prompt>"
+#
+# This wrapper translates between the two invocation styles.
+# Place this directory earlier in PATH than the real claude binary.
+
+REAL_CLAUDE="$(which -a claude | grep -v "$(cd "$(dirname "$0")" && pwd)" | head -1)"
+
+if [ -z "$REAL_CLAUDE" ]; then
+  echo "error: claude CLI not found in PATH (excluding this wrapper)" >&2
+  exit 1
+fi
+
+prompt=""
+extra_args=()
+
+for arg in "$@"; do
+  case "$arg" in
+    --yes|--no-auto-update)
+      ;;
+    *)
+      if [ -z "$prompt" ]; then
+        prompt="$arg"
+      else
+        extra_args+=("$arg")
+      fi
+      ;;
+  esac
+done
+
+exec "$REAL_CLAUDE" -p --dangerously-skip-permissions "${extra_args[@]}" "$prompt"

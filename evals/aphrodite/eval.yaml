@@ -1,0 +1,42 @@
+version: "1"
+skill: ../../.agents/skills/aphrodite
+defaults:
+  agent: nim
+  provider: local
+  trials: 5
+  timeout: 120
+  threshold: 0.8
+tasks:
+  - name: improve-error-messages
+    instruction: |
+      Read `error_messages.py` — a dict of error codes to vague error messages.
+
+      Create `improved_errors.py` with the same structure (ERRORS dict, same keys)
+      but replace each message with a user-friendly, actionable error message that:
+      - Tells the user what happened (not just "error")
+      - Suggests what they can do about it
+      - Is clear enough for a non-technical user
+      - Keeps a professional, helpful tone
+
+      Example: "error" → "An unexpected error occurred. Please try again, and if the problem persists, contact support at help@example.com."
+
+      IMPORTANT: You MUST use the provided tools to create output files. Do not just describe what you would write — actually create the files.
+    workspace:
+      - src: fixtures/error_messages.py
+        dest: error_messages.py
+    graders:
+      - type: deterministic
+        run: bash graders/check.sh
+        weight: 0.7
+      - type: llm_rubric
+        rubric: |
+          User Experience (0-0.5):
+          - Messages are clear to non-technical users?
+          - Each message suggests a next action?
+          - Tone is professional and empathetic?
+
+          Completeness (0-0.5):
+          - All 8 error codes improved?
+          - No generic filler ("An error occurred")?
+          - Context-specific to each error type?
+        weight: 0.3

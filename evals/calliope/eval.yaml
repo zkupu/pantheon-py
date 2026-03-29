@@ -1,0 +1,43 @@
+version: "1"
+skill: ../../.agents/skills/calliope
+defaults:
+  agent: nim
+  provider: local
+  trials: 5
+  timeout: 120
+  threshold: 0.8
+tasks:
+  - name: design-code-review-prompt
+    instruction: |
+      Read `task.md` for the requirements. Design a system prompt for an AI
+      code review assistant and save it as `system_prompt.md`.
+
+      The prompt must include:
+      1. Clear role definition
+      2. Specific review criteria (security, performance, readability)
+      3. Structured output format (e.g., findings with severity levels)
+      4. Examples of Python anti-patterns to catch
+      5. Instructions for tone and actionability
+
+      The prompt should be ready to use directly with the API.
+
+      IMPORTANT: You MUST use the provided tools to create output files. Do not just describe what you would write — actually create the files.
+    workspace:
+      - src: fixtures/task.md
+        dest: task.md
+    graders:
+      - type: deterministic
+        run: bash graders/check.sh
+        weight: 0.6
+      - type: llm_rubric
+        rubric: |
+          Prompt Quality (0-0.5):
+          - Clear, unambiguous role definition?
+          - Structured output format specified?
+          - Would produce consistent, useful reviews?
+
+          Domain Expertise (0-0.5):
+          - Python-specific anti-patterns listed?
+          - Security concerns appropriate for a backend?
+          - Actionable review criteria (not vague)?
+        weight: 0.4

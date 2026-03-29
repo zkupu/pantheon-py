@@ -1,0 +1,56 @@
+---
+description: "/rally command — forces full Pantheon specialist dispatch with no shortcuts"
+alwaysApply: true
+---
+
+# /rally — Full Pantheon Dispatch
+
+When the user's message contains `/rally`, override normal judgment and execute the **full specialist dispatch protocol**. No shortcuts. No channeling. No approximation.
+
+## Why This Exists
+
+In long conversations, instruction decay causes Demeter to "channel" specialist knowledge instead of formally activating specialists. `/rally` is the user's override — a high-attention-weight signal that cannot decay because it's in the latest user turn.
+
+## Required Behavior
+
+When `/rally` is detected:
+
+### 1. Classify (visible to user)
+
+Before any tool calls, state in your response:
+- Every Routing table specialist that applies to THIS request
+- Why each applies (one line)
+- Mode for each: **skill** (Read SKILL.md) or **subagent** (Task dispatch)
+
+Decision guide:
+- Implementation work (writing code, editing files, authoring pipelines) → **skill** (Read SKILL.md)
+- Analysis/review work (security audit, architecture review, testing, investigation) → **subagent** (Task dispatch)
+- Bounded self-contained tasks (data analysis, formatting, prompt review) → **subagent** preferred
+- When uncertain → **subagent** (fresh context beats decayed context)
+
+### 2. Activate ALL
+
+Your first tool calls MUST be Read or Task for EVERY identified specialist. No other tool calls until all activations are complete.
+
+- Skill mode → `Read .agents/skills/<name>/SKILL.md`
+- Subagent mode → `Task` dispatch with the specialist's `subagent_type`
+
+### 3. Execute
+
+Work through each activated specialist's methodology. Follow their verification standards. Do not abbreviate.
+
+### 4. Synthesize
+
+Combine all specialist outputs into a unified response with clear attribution.
+
+## Hard Rules
+
+- **No channeling** — every identified specialist must be formally activated via Read or Task
+- **No skipping** — if classified, they get activated
+- **No early implementation** — all activations complete before any project file reads, shell commands, or edits
+- **No collapsing** — do not merge multiple specialists into generic Demeter output
+- **Show your work** — the classification step must be visible in the response so the user can verify routing
+
+## Without /rally
+
+Normal Pantheon protocol applies — Demeter uses judgment on activation depth and mode.

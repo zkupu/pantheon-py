@@ -1,0 +1,43 @@
+version: "1"
+skill: ../../.agents/skills/pele
+defaults:
+  agent: nim
+  provider: local
+  trials: 5
+  timeout: 120
+  threshold: 0.8
+tasks:
+  - name: containerize-flask-app
+    instruction: |
+      Read `app.py` — a Flask API. Create a production-ready `Dockerfile` that:
+
+      1. Uses a slim Python base image
+      2. Installs only flask (via pip)
+      3. Copies app.py into the container
+      4. Exposes port 8080
+      5. Runs the app with a production WSGI server (gunicorn) or directly
+      6. Uses a non-root user
+      7. Sets APP_VERSION via a build arg or env var
+
+      Do not create docker-compose. Just the Dockerfile.
+
+      IMPORTANT: You MUST use the provided tools to create output files. Do not just describe what you would write — actually create the files.
+    workspace:
+      - src: fixtures/app.py
+        dest: app.py
+    graders:
+      - type: deterministic
+        run: bash graders/check.sh
+        weight: 0.7
+      - type: llm_rubric
+        rubric: |
+          Production Readiness (0-0.5):
+          - Slim base image (not full python:3.x)?
+          - Non-root user?
+          - Proper layer ordering for cache efficiency?
+
+          Ops Best Practices (0-0.5):
+          - HEALTHCHECK instruction?
+          - Minimal attack surface (no unnecessary packages)?
+          - Correct port exposure matching app.py?
+        weight: 0.3

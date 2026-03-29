@@ -1,0 +1,16 @@
+.env
+__pycache__/
+*.pyc
+*.egg-info/
+dist/
+build/
+.venv/
+.memory/
+.audit/
+.cache/
+.mcp-auth/
+.coverage
+.pytest_cache/
+.ruff_cache/
+results-local/
+results/

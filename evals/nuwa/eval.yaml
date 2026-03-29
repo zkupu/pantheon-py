@@ -1,0 +1,67 @@
+version: "1"
+
+skill: ../../.agents/skills/nuwa
+
+defaults:
+  agent: claude
+  provider: docker
+  trials: 5
+  timeout: 120
+  threshold: 0.8
+  docker:
+    base: python:3.12-slim
+
+tasks:
+  - name: implement-csv-parser
+    instruction: |
+      You have two files:
+      - `models.py` — a `Record` dataclass with fields: id, name, email, role, active
+      - `data.csv` — sample data (some rows have missing fields)
+
+      Create a file called `records.py` that implements:
+
+      `parse_records(path: str) -> list[Record]` — reads the CSV file and returns
+      a list of `Record` instances. Handle missing fields gracefully:
+      - Missing `email` or `name`: use empty string
+      - Missing `role`: use `"unknown"`
+      - Missing `active`: default to `False`
+      - `active` field should be converted from string `"true"`/`"false"` to `bool`
+      - `id` should be converted to `int`
+
+      The function must have complete type hints. Import `Record` from `models`.
+      Use only the standard library (csv module). Do not install any packages.
+
+      The file must be importable. Test with: `python3 -c "from records import parse_records"`
+
+      IMPORTANT: You MUST use the provided tools to create output files. Do not just describe what you would write — actually create the files.
+
+    workspace:
+      - src: fixtures/data.csv
+        dest: data.csv
+      - src: fixtures/models.py
+        dest: models.py
+
+    graders:
+      - type: deterministic
+        run: bash graders/check.sh
+        weight: 0.7
+
+      - type: llm_rubric
+        rubric: |
+          Evaluate the Python code quality:
+
+          Pythonic Style (0-0.3):
+          - Uses the csv module from stdlib?
+          - Leverages dataclass construction properly?
+          - Clean, readable code following PEP 8?
+
+          Type Safety (0-0.3):
+          - Complete type hints on all functions?
+          - Proper use of list[Record] return types?
+          - No use of Any or bare dict?
+
+          Error Handling (0-0.4):
+          - Gracefully handles missing CSV fields per the spec?
+          - No bare except clauses?
+          - Would a maintainer trust this code in production?
+        weight: 0.3

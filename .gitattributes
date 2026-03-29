@@ -1,0 +1,18 @@
+# Normalize line endings — critical for WSL 2 where core.autocrlf may be true
+* text=auto
+
+# Force LF for files that break with CRLF
+*.py text eol=lf
+*.sh text eol=lf
+*.md text eol=lf
+*.yaml text eol=lf
+*.yml text eol=lf
+*.toml text eol=lf
+*.json text eol=lf
+*.lock text eol=lf
+Makefile text eol=lf
+
+# Binary files
+*.png binary
+*.jpg binary
+*.gif binary
