@@ -466,3 +466,115 @@ class TestEquipTools:
         equip_tools(a, registry)
         assert a.tools.get("echo") is not None
         assert a.tools.get("other") is None
+
+
+class TestContextDecayInjection:
+    """Tests for 2A — context decay reminders injected into the ReAct loop."""
+
+    @staticmethod
+    def _tool_resp(call_id: str = "tc-1") -> ChatResponse:
+        return ChatResponse(
+            content="",
+            usage=Usage(1, 1, 2),
+            tool_calls=[
+                {
+                    "id": call_id,
+                    "type": "function",
+                    "function": {"name": "echo", "arguments": '{"msg":"ping"}'},
+                }
+            ],
+        )
+
+    def test_self_audit_injected_at_5_tool_calls(self, tmp_skill):
+        """After 5 tool calls in a turn, a SELF-AUDIT system message appears."""
+        # 5 tool-call iterations then a final reply — 6 responses total
+        responses = [self._tool_resp(f"tc-{i}") for i in range(5)]
+        responses.append(ChatResponse(content="done", usage=Usage(1, 1, 2)))
+        client = _client_returning(*responses)
+
+        a = Agent(tmp_skill(tools=["echo"], max_iterations=10), client)
+        a.tools.register(EchoTool())
+        a.run("go")
+
+        system_msgs = [m for m in a.history if m.role == "system"]
+        audit_msgs = [m for m in system_msgs if "SELF-AUDIT" in m.content]
+        assert len(audit_msgs) == 1
+        assert "5 tool calls this turn" in audit_msgs[0].content
+
+    def test_no_audit_before_5_tool_calls(self, tmp_skill):
+        """Fewer than 5 tool calls should not trigger an audit message."""
+        responses = [self._tool_resp(f"tc-{i}") for i in range(3)]
+        responses.append(ChatResponse(content="done", usage=Usage(1, 1, 2)))
+        client = _client_returning(*responses)
+
+        a = Agent(tmp_skill(tools=["echo"], max_iterations=10), client)
+        a.tools.register(EchoTool())
+        a.run("go")
+
+        audit_msgs = [m for m in a.history if m.role == "system" and "SELF-AUDIT" in m.content]
+        assert len(audit_msgs) == 0
+
+    def test_decay_warning_injected_at_turn_5(self, tmp_skill):
+        """After 5 user turns, a CONTEXT DECAY WARNING is injected once."""
+        tool_resp = self._tool_resp()
+        final_resp = ChatResponse(content="ok", usage=Usage(1, 1, 2))
+
+        # Simulate 5 turns — each turn is a run() call that does 1 tool call + reply
+        for turn in range(5):
+            client = _client_returning(tool_resp, final_resp)
+            if turn == 0:
+                a = Agent(tmp_skill(tools=["echo"], max_iterations=10), client)
+                a.tools.register(EchoTool())
+            else:
+                a.client = client
+                a.client.chat = client.chat
+
+            a.run(f"turn {turn + 1}")
+
+        decay_msgs = [
+            m for m in a.history if m.role == "system" and "CONTEXT DECAY WARNING" in m.content
+        ]
+        assert len(decay_msgs) == 1
+        assert "exceeded 5 turns" in decay_msgs[0].content
+
+    def test_decay_warning_not_injected_before_turn_5(self, tmp_skill):
+        """Before 5 turns, no decay warning should appear."""
+        tool_resp = self._tool_resp()
+        final_resp = ChatResponse(content="ok", usage=Usage(1, 1, 2))
+
+        for turn in range(4):
+            client = _client_returning(tool_resp, final_resp)
+            if turn == 0:
+                a = Agent(tmp_skill(tools=["echo"], max_iterations=10), client)
+                a.tools.register(EchoTool())
+            else:
+                a.client = client
+                a.client.chat = client.chat
+
+            a.run(f"turn {turn + 1}")
+
+        decay_msgs = [
+            m for m in a.history if m.role == "system" and "CONTEXT DECAY WARNING" in m.content
+        ]
+        assert len(decay_msgs) == 0
+
+    def test_decay_warning_injected_only_once(self, tmp_skill):
+        """The decay warning should not be duplicated on subsequent turns."""
+        tool_resp = self._tool_resp()
+        final_resp = ChatResponse(content="ok", usage=Usage(1, 1, 2))
+
+        for turn in range(7):
+            client = _client_returning(tool_resp, final_resp)
+            if turn == 0:
+                a = Agent(tmp_skill(tools=["echo"], max_iterations=10), client)
+                a.tools.register(EchoTool())
+            else:
+                a.client = client
+                a.client.chat = client.chat
+
+            a.run(f"turn {turn + 1}")
+
+        decay_msgs = [
+            m for m in a.history if m.role == "system" and "CONTEXT DECAY WARNING" in m.content
+        ]
+        assert len(decay_msgs) == 1

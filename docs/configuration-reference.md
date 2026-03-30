@@ -101,6 +101,7 @@ hosts via `INFERENCE_RATE_LIMIT_HOSTS` (comma-separated hostnames).
 
 | Variable | Default | Description |
 |----------|---------|-------------|
+| `INFERENCE_RATE_LIMIT_HOSTS` | (empty) | Comma-separated hostnames that auto-enable rate limiting when the gateway matches |
 | `INFERENCE_RATE_LIMIT_PER_SECOND` | `4` | Max requests per second |
 | `INFERENCE_RATE_LIMIT_PER_MINUTE` | `45` | Max requests per minute |
 | `INFERENCE_RATE_LIMIT_PER_HOUR` | `900` | Max requests per hour |
@@ -176,6 +177,10 @@ To use different model names (e.g., with Anthropic or OpenAI endpoints):
 Model names are provider-specific. When switching gateways, update the `model` field in SKILL.md files to match your provider's model identifiers.
 
 **Note for IDE agents**: The `model` field in SKILL.md metadata is consumed only by the Python CLI runtime. When running as an IDE agent (Cursor, Claude Code), the IDE's own model is used — SKILL.md model names are ignored.
+
+### Default Fallback Model
+
+Skills without an explicit `model` field in their SKILL.md metadata default to `meta/llama-3.3-70b-instruct` (see `skill.py:58`). All 24 bundled Pantheon skills specify their model explicitly, so this fallback only applies to user-created skills that omit the field.
 
 ### Compatibility Field
 

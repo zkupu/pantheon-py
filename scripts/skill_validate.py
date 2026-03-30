@@ -6,8 +6,15 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import sys
 from dataclasses import asdict, dataclass
 from pathlib import Path
+
+_src_dir = str(Path(__file__).resolve().parent.parent / "src")
+if _src_dir not in sys.path:
+    sys.path.insert(0, _src_dir)
+
+from pantheon.config import repo_root  # noqa: E402
 
 
 @dataclass
@@ -15,16 +22,6 @@ class Finding:
     level: str
     scope: str
     message: str
-
-
-def find_repo_root(start: str | Path | None = None) -> Path | None:
-    current = Path(start or Path.cwd()).resolve()
-    if current.is_file():
-        current = current.parent
-    for candidate in (current, *current.parents):
-        if (candidate / "pyproject.toml").exists() and (candidate / ".agents" / "skills").is_dir():
-            return candidate
-    return None
 
 
 def list_skill_names(root: Path) -> set[str]:
@@ -159,7 +156,7 @@ def main(argv: list[str] | None = None) -> int:
         parser.print_help()
         return 1
 
-    root = find_repo_root()
+    root = repo_root()
     if root is None:
         finding = Finding("error", "repo", "could not locate the Pantheon repository root")
         payload = [asdict(finding)]

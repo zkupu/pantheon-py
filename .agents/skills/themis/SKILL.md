@@ -76,6 +76,55 @@ CI/CD reviews:
 - **Scenario-based testing**: Use AI personas to simulate multi-turn conversations covering edge cases, unknown policies, and adversarial inputs
 - **Scorecard evaluation**: Grade responses across structured criteria (accuracy, tone, policy adherence) using LLM-as-judge frameworks
 
+## Output Contract
+
+When dispatched as specialist, return results in this structure:
+
+### Test Results
+- Framework and command used
+- Total: X passed, Y failed, Z skipped
+- Duration
+
+### Failures (if any)
+Each failure:
+- **Test**: name and file location
+- **Error**: actual error message/traceback
+- **Root Cause**: diagnosis
+- **Classification**: real bug | test issue | environment issue
+- **Fix**: concrete recommendation
+
+### Coverage (if available)
+- Overall percentage
+- Critical gaps (files/functions with 0% coverage on critical paths)
+
+### Quality Assessment
+- Test quality score: strong / adequate / weak
+- Specific issues found
+- Recommendations for improvement
+
+## Bad Output (Do Not Produce)
+
+**Bad — vague test recommendation without a concrete test name or location:**
+```
+### Quality Assessment
+- Coverage is low on the orchestration module. Consider adding more tests
+  for the review pipeline, especially around error handling and edge cases.
+```
+
+**Good — names the exact test, file, and what it verifies:**
+```
+### Quality Assessment
+- Test quality score: adequate
+- Critical gap: `src/pantheon/orchestrate.py:Review._fan_out()` (line 515) has
+  no test for partial reviewer failure. Add:
+  - `test_fan_out_continues_when_one_reviewer_errors` in `tests/test_orchestrate.py`
+    — mock one reviewer to raise, verify remaining reviewers still produce output
+    and the error is logged with the failing reviewer's name.
+  - `test_fan_out_timeout_kills_slow_reviewer` in `tests/test_orchestrate.py`
+    — mock a reviewer that sleeps past the deadline, verify it's cancelled and
+    the synthesis proceeds with available results.
+```
+
 ## Verification
 - Run the test suite after writing tests
 - Confirm new tests pass

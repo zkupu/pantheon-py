@@ -1,6 +1,6 @@
 # Contributing to Pantheon
 
-### Virtual environment
+## Virtual environment
 
 Create and activate a virtual environment (required on Ubuntu 22.04+):
 

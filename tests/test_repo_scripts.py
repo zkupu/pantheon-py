@@ -25,14 +25,16 @@ skill_validate = _load_module("pantheon_skill_validate", "scripts/skill_validate
 
 
 class TestDoctor:
-    def test_find_repo_root(self, tmp_path):
+    def test_repo_root(self, tmp_path):
+        from pantheon.config import repo_root
+
         root = tmp_path / "repo"
         nested = root / "nested" / "dir"
         (root / ".agents" / "skills").mkdir(parents=True)
         (root / "pyproject.toml").write_text("[project]\nname='pantheon'\n")
         nested.mkdir(parents=True)
 
-        assert doctor.find_repo_root(nested) == root
+        assert repo_root(nested) == root
 
     def test_doctor_claude_code_runs(self, tmp_path):
         """Verify doctor claude-code subcommand produces structured output."""
@@ -106,7 +108,6 @@ class TestDoctor:
         assert "No Cursor-specific references" in details["no-cursor-deps"]
 
 
-
 class TestSecretScan:
     def test_finds_secrets_with_redacted_preview(self, tmp_path):
         target = tmp_path / "config.env"
@@ -170,10 +171,12 @@ class TestSkillValidate:
         (root / "scripts" / "helper.py").write_text("print('ok')\n")
         (root / "scripts" / "README.md").write_text("- `helper.py`\n")
         (root / "README.md").write_text(
-            "## The Pantheon\n\n| Name | Persona |\n|------|---------|\n| athena | x |\n| demeter | x |\n"
+            "## The Pantheon\n\n| Name | Persona |\n"
+            "|------|---------|\n| athena | x |\n| demeter | x |\n"
         )
         (root / "AGENTS.md").write_text(
-            "## Roster\n\n| Agent | Persona |\n|-------|---------|\n| athena | x |\n| demeter | x |\n"
+            "## Roster\n\n| Agent | Persona |\n"
+            "|-------|---------|\n| athena | x |\n| demeter | x |\n"
         )
         (root / ".cursor" / "rules" / "pantheon.mdc").write_text(
             "## Roster\n\n| Agent | Role |\n|-------|------|\n| athena | x |\n| demeter | x |\n"

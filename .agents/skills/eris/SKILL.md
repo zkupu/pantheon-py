@@ -76,6 +76,29 @@ Include **at least 3 questions** from this arsenal in every challenge:
 - **Evolutionary challenge design** — Start with a simple challenge. Based on the response, evolve the challenge to probe deeper. Iterate until you find the load-bearing assumption or confirm it holds
 - **Scaling stress tests** — "What happens at 10x scale?", "What if 3 agents fail simultaneously?", "What if context windows are exhausted mid-task?"
 
+## Output Contract
+
+When dispatched as specialist, return findings in this structure:
+
+### Assumptions Challenged
+Each assumption:
+- **Assumption**: what's being taken for granted
+- **Risk if Wrong**: what breaks
+- **Evidence For/Against**: what supports or contradicts it
+- **Alternative**: what to do instead
+
+### Questions Raised
+At least 3 pointed questions that demand answers before proceeding.
+
+### Alternatives Suggested
+At least 1 alternative approach that was not considered.
+
+### Scaling Risks (if applicable)
+What breaks at 10x scale, with changed team, or under resource constraints.
+
+### Tool-Use Vulnerabilities (if applicable)
+For agent/AI systems: specific exploitation scenarios.
+
 ## Verification
 - Read code/designs/docs before challenging — ground questions in evidence
 - Search codebase for patterns being debated — "we always do X" should be verifiable

@@ -137,6 +137,8 @@ class ActivationTracker:
     _turn_has_work: bool = False
     _violations: list[int] = field(default_factory=list)
     _turn_count: int = 0
+    _tool_calls_this_turn: int = 0
+    _decay_warning_injected: bool = False
 
     def record_activation(self, skill_name: str) -> None:
         """Record a SKILL.md read."""
@@ -148,11 +150,27 @@ class ActivationTracker:
             self._violations.append(self._turn_count)
         self._turn_has_work = True
 
+    def record_tool_calls(self, count: int) -> None:
+        """Record tool calls executed within the current turn."""
+        self._tool_calls_this_turn += count
+
+    def needs_self_audit(self) -> bool:
+        """True when the current turn has hit a 5-call audit boundary."""
+        return self._tool_calls_this_turn > 0 and self._tool_calls_this_turn % 5 == 0
+
+    def needs_decay_warning(self) -> bool:
+        """True once when the conversation reaches 5+ turns."""
+        return self._turn_count >= 5 and not self._decay_warning_injected
+
+    def mark_decay_warning_injected(self) -> None:
+        self._decay_warning_injected = True
+
     def new_turn(self) -> None:
         """Start a new turn (user message received)."""
         self._turn_count += 1
         self._turn_activations.clear()
         self._turn_has_work = False
+        self._tool_calls_this_turn = 0
 
     @property
     def compliance_rate(self) -> float:
@@ -225,13 +243,14 @@ class BudgetStatus:
 
     @property
     def exceeded(self) -> bool:
-        if self.budget.max_usd > 0 and self.spent_usd > self.budget.max_usd:
-            return True
-        if self.budget.max_tokens > 0 and self.tokens_used > self.budget.max_tokens:
-            return True
-        if self.budget.max_tool_calls > 0 and self.tool_calls_used > self.budget.max_tool_calls:
-            return True
-        return False
+        return (
+            (self.budget.max_usd > 0 and self.spent_usd > self.budget.max_usd)
+            or (self.budget.max_tokens > 0 and self.tokens_used > self.budget.max_tokens)
+            or (
+                self.budget.max_tool_calls > 0
+                and self.tool_calls_used > self.budget.max_tool_calls
+            )
+        )
 
 
 class BudgetTracker:

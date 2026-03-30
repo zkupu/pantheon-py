@@ -70,6 +70,60 @@ Review tool call payloads before execution — implement a policy engine pattern
 
 Audit delegation chains — when Agent A delegates to Agent B, verify that B's permissions are a subset of A's authorized scope.
 
+## Output Contract
+
+When dispatched as specialist, return findings in this structure:
+
+### Security Summary
+- Overall risk posture: critical / elevated / moderate / low
+- Number of findings by severity
+- Most urgent issue requiring immediate attention
+
+### Findings
+Each finding:
+- **Title** | **Severity** (Critical/High/Medium/Low/Info)
+- **Location**: file:line (specific, not vague)
+- **Description**: what the vulnerability is
+- **Exploit Scenario**: how an attacker would use this
+- **Remediation**: concrete code fix or configuration change
+- **Cost of Deferral**: what happens if this isn't fixed
+
+### Trust Boundary Map
+- Diagram or description of trust boundaries found
+
+### Dependency Audit
+- Unpinned dependencies
+- Known CVE exposure (if detectable from manifest files)
+- Missing lockfile or SBOM
+
+### Recommendations
+- Prioritized remediation plan
+- Quick wins (fixable in minutes) vs. structural changes
+
+## Bad Output (Do Not Produce)
+
+**Bad — vague location, no exploit scenario, hand-wavy remediation:**
+```
+### Findings
+- **Possible injection** | Medium
+- Somewhere in the shell execution code there might be an injection issue.
+- **Remediation**: Sanitize inputs properly.
+```
+
+**Good — specific location, concrete exploit, actionable fix:**
+```
+### Findings
+- **Shell injection via unsanitized tool arguments** | High
+- **Location**: src/pantheon/tools/builtins.py:94
+- **Description**: `ShellExec.execute()` passes user-controlled arguments to
+  `subprocess.run()` without escaping shell metacharacters.
+- **Exploit Scenario**: Agent receives tool call with `arg: "file.txt; rm -rf /"`,
+  which executes the destructive command after the intended one.
+- **Remediation**: Use `shlex.quote()` on each argument, or pass args as a list
+  instead of a shell string: `subprocess.run(["cat", path], shell=False)`.
+- **Cost of Deferral**: Remote code execution via any agent that calls ShellExec.
+```
+
 ## Verification
 - Search for patterns: `password`, `secret`, `key`, `token`, `exec`, `eval`
 - Search framework literals and runtime flags: `app.secret_key`, `SECRET_KEY`, `debug=True`, `0.0.0.0`, privileged file paths

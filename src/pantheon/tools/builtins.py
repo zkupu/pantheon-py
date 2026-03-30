@@ -10,7 +10,7 @@ import subprocess
 from pathlib import Path
 
 from .base import Registry, Tool, param, strict_schema
-from .shell_safety import _check_allow_list, _check_deny_list
+from .shell_safety import _check_allow_list, _check_deny_list, _check_path_arguments
 
 _log = logging.getLogger(__name__)
 _MAX_READ_SIZE = 10 * 1024 * 1024
@@ -85,17 +85,18 @@ class ShellExec(Tool):
             _log.warning("shell_exec secrets-file blocked: %s", cmd[:120])
             return "error: command accesses a secrets file (.env) — blocked by safety policy"
         mode = os.environ.get("SHELL_EXEC_MODE", "allow-list")
-        if mode == "allow-list":
-            if err := _check_allow_list(cmd):
-                _log.warning("shell_exec allow-list blocked: %s", cmd[:120])
-                return err
+        if mode == "allow-list" and (err := _check_allow_list(cmd)):
+            _log.warning("shell_exec allow-list blocked: %s", cmd[:120])
+            return err
         if err := _check_deny_list(cmd):
             _log.warning("shell_exec blocked: %s", cmd[:120])
             return err
+        if err := _check_path_arguments(cmd, self._allowed_roots):
+            _log.warning("shell_exec path blocked: %s", cmd[:120])
+            return err
         cwd = args.get("workdir") or None
-        if cwd is not None:
-            if err := _check_allowed(Path(cwd), self._allowed_roots):
-                return err
+        if cwd is not None and (err := _check_allowed(Path(cwd), self._allowed_roots)):
+            return err
 
         if platform.system() == "Windows":
             shell_cmd = ["cmd.exe", "/c", cmd]

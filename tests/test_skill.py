@@ -130,6 +130,29 @@ metadata:
         s = parse_text("---\nname: x\ndescription: x\n---\n\nBody", "/x/SKILL.md")
         assert s.routing_signals == []
 
+    def test_boost_signals_parsed(self):
+        text = """---
+name: mokosh
+description: CI/CD pipeline weaver
+metadata:
+  model: opus-4
+  routing_signals:
+    - pipeline
+    - ci/cd
+  boost_signals:
+    - authoring
+    - yaml
+    - create
+---
+
+# Mokosh"""
+        s = parse_text(text, "/skills/mokosh/SKILL.md")
+        assert s.metadata.boost_signals == ["authoring", "yaml", "create"]
+
+    def test_boost_signals_default_empty(self):
+        s = parse_text("---\nname: x\ndescription: x\n---\n\nBody", "/x/SKILL.md")
+        assert s.metadata.boost_signals == []
+
 
 def _write_skill_md(directory: Path, name: str, description: str) -> None:
     """Create a minimal valid SKILL.md inside ``directory/name/``."""
@@ -247,13 +270,38 @@ class TestClassifyAgents:
         assert result[0][0] == "mokosh"
 
     def test_co_occurrence_boost_mokosh(self):
+        mokosh = _make_skill("mokosh", ["pipeline"])
+        mokosh.metadata.boost_signals = ["authoring", "yaml", "write", "create", "ci/cd"]
         skills = {
-            "mokosh": _make_skill("mokosh", ["pipeline"]),
+            "mokosh": mokosh,
             "kali": _make_skill("kali", ["security"]),
         }
         result = classify_agents("create a new pipeline YAML for deployment", skills)
         mokosh_score = next((s for n, s in result if n == "mokosh"), 0)
-        assert mokosh_score > 0
+        # Base signal "pipeline" scores 1, boost adds 2
+        assert mokosh_score == 3
+
+    def test_custom_boost_signals_from_metadata(self):
+        """Boost signals defined in metadata increase score when co-occurring."""
+        agent = _make_skill("seshat", ["data analysis", "sql"])
+        agent.metadata.boost_signals = ["dashboard", "metrics", "report"]
+        skills = {
+            "seshat": agent,
+            "kali": _make_skill("kali", ["security"]),
+        }
+        # "sql" matches routing signal (score 1), "dashboard" matches boost (+2)
+        result = classify_agents("write sql to build a dashboard", skills)
+        seshat_score = next((s for n, s in result if n == "seshat"), 0)
+        assert seshat_score == 3
+
+    def test_boost_signals_no_effect_without_routing_match(self):
+        """Boost signals don't fire if no routing signal matched first."""
+        agent = _make_skill("mokosh", ["pipeline"])
+        agent.metadata.boost_signals = ["yaml", "create"]
+        skills = {"mokosh": agent}
+        # "create" matches boost but "pipeline" not in task -> no routing match -> no boost
+        result = classify_agents("create a new yaml config file", skills)
+        assert result == []
 
     def test_no_matches_returns_empty(self):
         skills = {

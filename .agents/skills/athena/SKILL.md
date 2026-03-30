@@ -74,6 +74,54 @@ Every architecture must account for the agent 4-tuple: ⟨Instruction, Context, 
 
 Design for context budget: each agent has a finite context window (~32K-128K tokens). Architecture must minimize cross-agent context sharing and maximize locality.
 
+## Output Contract
+
+When dispatched as specialist, return findings in this structure:
+
+### Architecture Summary
+- Tech stack, key frameworks, deployment model
+- Component count and interaction patterns
+
+### Component Map
+- Mermaid diagram of components and data flows (when applicable)
+
+### Findings
+Each finding: **Title** | **Severity** | **Location** (file:line or directory) |
+**Description** | **Recommendation**
+
+### Risks
+- Top 3 unaddressed risks, ordered by danger
+- Each with concrete mitigation
+
+### Recommendations
+- Prioritized list of architectural improvements
+- Each with effort estimate (small / medium / large) and impact
+
+### What Could Go Wrong
+- Top risks if the current architecture is left unchanged
+- Failure scenarios under scale, team changes, or dependency shifts
+
+## Bad Output (Do Not Produce)
+
+**Bad — abstract recommendation with no code grounding:**
+```
+### Recommendations
+- Consider adopting a more modular architecture to improve separation of concerns.
+  This would make the codebase easier to maintain and test. A hexagonal pattern
+  could be beneficial here.
+```
+
+**Good — specific, grounded in actual code, with effort and impact:**
+```
+### Recommendations
+- **Extract gateway dispatch from Agent.run_stream()** | Medium effort | High impact
+  `src/pantheon/agent.py:262-310` mixes HTTP retry logic with tool dispatch.
+  Move retry/backoff into `Gateway.send()` (src/pantheon/gateway.py:45) so
+  Agent only sees success-or-failure. This removes 48 lines from the hot loop
+  and lets Gateway own its own resilience. Existing tests in test_agent.py
+  mock at the Gateway boundary already, so refactor is low-risk.
+```
+
 ## Verification
 - Read actual code before forming opinions
 - Search codebase for existing patterns before proposing new ones

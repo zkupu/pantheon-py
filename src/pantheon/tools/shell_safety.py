@@ -5,6 +5,7 @@ from __future__ import annotations
 import os
 import platform
 import re as _re
+from pathlib import Path
 
 _SHELL_DENY_UNIX = [
     _re.compile(r"rm\s+-(r|R|rf|Rf|fr|fR)\s+/(\s|$)"),
@@ -83,8 +84,8 @@ def _check_deny_list(cmd: str) -> str | None:
 _DEFAULT_ALLOW_LIST = frozenset(
     {
         "git",
-        "python",
-        "python3",
+        # python/python3/node excluded — write-then-execute chain bypasses
+        # all controls.  Add to SHELL_EXEC_ALLOW_LIST explicitly if needed.
         "pip",
         "pip3",
         "pytest",
@@ -108,14 +109,14 @@ _DEFAULT_ALLOW_LIST = frozenset(
         "echo",
         "printf",
         "wc",
-        "docker",
-        "docker-compose",
+        # docker intentionally excluded from default — volume mounts can
+        # bypass all path confinement.  Operators who need it should add
+        # docker,docker-compose to SHELL_EXEC_ALLOW_LIST explicitly.
         "make",
         "cmake",
         "go",
         "cargo",
         "npm",
-        "node",
         "dotnet",
         "msbuild",
     }
@@ -134,6 +135,10 @@ _SHELL_CHAIN_PATTERN = _re.compile(r"[\n\r;|&`]|\$\(|>\s*>?|<\s*<?\(")
 
 _INTERPRETER_CMDS = frozenset({"python", "python3", "python2", "node", "ruby", "perl"})
 _INLINE_EXEC_RE = _re.compile(r"\s+-\w*[ceE]\b")
+
+# npm exec / npx can run arbitrary code — block these even though npm
+# itself (for install/ci) is on the allow-list.
+_NPM_EXEC_RE = _re.compile(r"(?:^|\s)(?:npx|npm\s+exec)\b")
 
 
 def _check_allow_list(cmd: str) -> str | None:
@@ -155,7 +160,71 @@ def _check_allow_list(cmd: str) -> str | None:
         )
     if base_cmd in _INTERPRETER_CMDS and _INLINE_EXEC_RE.search(cmd):
         return (
-            f"error: inline code execution via '{base_cmd} -c/-e' is not permitted"
+            f"error: inline code execution via '{base_cmd} -c/-e'"
+            " is not permitted"
             " — write code to a file and run the file instead"
         )
+    if _NPM_EXEC_RE.search(cmd):
+        return "error: 'npm exec' / 'npx' can run arbitrary code — blocked by safety policy"
+    return None
+
+
+# ---------------------------------------------------------------------------
+# Path argument validation — Kali F-01
+# ---------------------------------------------------------------------------
+
+_FILE_READING_CMDS = frozenset(
+    {"cat", "head", "tail", "grep", "rg", "find", "fd", "ls", "less", "more", "bat"}
+)
+
+
+def _check_path_arguments(cmd: str, allowed_roots: list[Path] | None) -> str | None:
+    """Validate that path-like arguments stay within *allowed_roots*.
+
+    Only applies to file-reading commands (cat, head, tail, grep, etc.).
+    Returns an error string if a path escapes the sandbox, or *None* if ok.
+    """
+    if not allowed_roots:
+        return None
+
+    parts = cmd.strip().split()
+    if not parts:
+        return None
+
+    base_cmd = parts[0].rsplit("/", 1)[-1].rsplit("\\", 1)[-1]
+    if base_cmd not in _FILE_READING_CMDS:
+        return None
+
+    resolved_roots = [r.resolve() for r in allowed_roots]
+
+    for arg in parts[1:]:
+        # Skip flags
+        if arg.startswith("-"):
+            continue
+        # Only check args that look like paths (contain / or start
+        # with .).  Bare words are likely patterns (grep) not paths.
+        if "/" not in arg and not arg.startswith("."):
+            continue
+
+        try:
+            p = Path(arg).resolve()
+        except (OSError, ValueError):
+            continue
+
+        inside = False
+        for root in resolved_roots:
+            try:
+                p.relative_to(root)
+                inside = True
+                break
+            except ValueError:
+                continue
+
+        if not inside:
+            roots_str = ", ".join(str(r) for r in allowed_roots)
+            return (
+                f"error: path argument '{arg}' is outside allowed roots: {roots_str}"
+                " — blocked by safety policy"
+            )
+
     return None

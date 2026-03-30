@@ -442,10 +442,7 @@ def _broadcast(agents: dict, names: list[str], msg: str) -> None:
         a = agents[name]
         start = time.monotonic()
         try:
-            if a.skill.tool_names:
-                reply = a.run(msg)
-            else:
-                reply = a.send(msg)
+            reply = a.run(msg) if a.skill.tool_names else a.send(msg)
             results[idx] = (a.name, a.persona, reply, "", time.monotonic() - start)
         except Exception as e:
             results[idx] = (a.name, a.persona, "", str(e), time.monotonic() - start)

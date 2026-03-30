@@ -22,15 +22,14 @@ import os
 import platform
 import shutil
 import subprocess
+import sys
 from pathlib import Path
 
+_src_dir = str(Path(__file__).resolve().parent.parent / "src")
+if _src_dir not in sys.path:
+    sys.path.insert(0, _src_dir)
 
-def find_repo_root() -> Path:
-    current = Path(__file__).resolve().parent
-    for candidate in (current, *current.parents):
-        if (candidate / "pyproject.toml").exists() and (candidate / ".agents" / "skills").is_dir():
-            return candidate
-    raise SystemExit("Could not locate the Pantheon repository root")
+from pantheon.config import repo_root  # noqa: E402
 
 
 def cursor_home() -> Path:
@@ -196,15 +195,13 @@ def clean(cursor: Path, *, dry_run: bool) -> list[str]:
     actions: list[str] = []
     for _, cursor_rel in DIRECTORY_LINKS:
         target = cursor / cursor_rel
-        if _remove_link(target, dry_run=dry_run):
-            if not dry_run:
-                actions.append(f"  removed: {target}")
+        if _remove_link(target, dry_run=dry_run) and not dry_run:
+            actions.append(f"  removed: {target}")
 
     for _, cursor_rel in FILE_LINKS + RULE_LINKS:
         target = cursor / cursor_rel
-        if _remove_link(target, dry_run=dry_run):
-            if not dry_run:
-                actions.append(f"  removed: {target}")
+        if _remove_link(target, dry_run=dry_run) and not dry_run:
+            actions.append(f"  removed: {target}")
 
     return actions
 
@@ -228,7 +225,9 @@ def main(argv: list[str] | None = None) -> int:
     )
     args = parser.parse_args(argv)
 
-    repo = find_repo_root()
+    repo = repo_root(Path(__file__))
+    if repo is None:
+        raise SystemExit("Could not locate the Pantheon repository root")
     cursor = args.cursor_home or cursor_home()
 
     is_windows = platform.system() == "Windows"

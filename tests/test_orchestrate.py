@@ -16,6 +16,7 @@ from pantheon.orchestrate import (
     Topology,
     _wrap_agent_output,
     run_topology,
+    validate_output_contract,
 )
 
 
@@ -562,3 +563,96 @@ class TestOutputSanitization:
         result = _wrap_agent_output("test", "clean content")
         assert result.startswith('<agent_output name="test">')
         assert result.endswith("</agent_output>")
+
+
+class TestOutputContractValidation:
+    def test_validate_output_contract_all_present(self):
+        output = (
+            "### Security Summary\nAll good.\n"
+            "### Findings\nNone.\n"
+            "### Trust Boundary Map\nN/A.\n"
+            "### Dependency Audit\nClean.\n"
+            "### Recommendations\nNone.\n"
+        )
+        missing = validate_output_contract(
+            output,
+            [
+                "Security Summary",
+                "Findings",
+                "Trust Boundary Map",
+                "Dependency Audit",
+                "Recommendations",
+            ],
+        )
+        assert missing == []
+
+    def test_validate_output_contract_missing_headings(self):
+        output = "### Security Summary\nAll good.\n### Findings\nNone.\n"
+        missing = validate_output_contract(
+            output,
+            [
+                "Security Summary",
+                "Findings",
+                "Trust Boundary Map",
+                "Dependency Audit",
+                "Recommendations",
+            ],
+        )
+        assert "Trust Boundary Map" in missing
+        assert "Dependency Audit" in missing
+        assert "Recommendations" in missing
+        assert "Security Summary" not in missing
+        assert "Findings" not in missing
+
+    def test_validate_output_contract_case_insensitive(self):
+        output = "## security summary\nOk.\n## findings\nNone.\n"
+        missing = validate_output_contract(output, ["Security Summary", "Findings"])
+        assert missing == []
+
+    def test_validate_output_contract_various_heading_levels(self):
+        output = "# Security Summary\nOk.\n###### Findings\nNone.\n"
+        missing = validate_output_contract(output, ["Security Summary", "Findings"])
+        assert missing == []
+
+    def test_review_logs_missing_contract_sections(self, tmp_agent, caplog):
+        incomplete_output = "### Security Summary\nLooks fine.\n### Findings\nNone.\n"
+        r1 = tmp_agent("kali", reply=incomplete_output)
+        synth = tmp_agent("athena", reply="synthesis")
+
+        rev = Review(synth, [r1])
+        with caplog.at_level("WARNING"):
+            rev.run("review this")
+
+        assert any("kali output missing contract sections" in msg for msg in caplog.messages)
+
+        synth_call = synth.client.chat.call_args
+        messages = synth_call.kwargs["messages"]
+        user_msg = next(m for m in messages if m.role == "user")
+        assert "missing sections" in user_msg.content
+
+    def test_review_no_warning_for_complete_contract(self, tmp_agent, caplog):
+        complete_output = (
+            "### Security Summary\nOk.\n"
+            "### Findings\nNone.\n"
+            "### Trust Boundary Map\nN/A.\n"
+            "### Dependency Audit\nClean.\n"
+            "### Recommendations\nNone.\n"
+        )
+        r1 = tmp_agent("kali", reply=complete_output)
+        synth = tmp_agent("athena", reply="synthesis")
+
+        rev = Review(synth, [r1])
+        with caplog.at_level("WARNING"):
+            rev.run("review this")
+
+        assert not any("missing contract sections" in msg for msg in caplog.messages)
+
+    def test_review_skips_contract_check_for_unknown_agent(self, tmp_agent, caplog):
+        r1 = tmp_agent("unknown_agent", reply="no headings at all")
+        synth = tmp_agent("athena", reply="synthesis")
+
+        rev = Review(synth, [r1])
+        with caplog.at_level("WARNING"):
+            rev.run("review this")
+
+        assert not any("missing contract sections" in msg for msg in caplog.messages)

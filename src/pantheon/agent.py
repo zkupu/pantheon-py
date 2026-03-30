@@ -351,6 +351,39 @@ class Agent:
                             tool_call_id=r.get("tool_call_id", ""),
                         )
                     )
+
+                # --- Context decay mitigation ---
+                tracker = self._activation_tracker
+                tracker.record_tool_calls(len(resp.tool_calls))
+
+                if tracker.needs_self_audit():
+                    activated = ", ".join(tracker._turn_activations) or "none"
+                    n = tracker._tool_calls_this_turn
+                    self._history.append(
+                        Message(
+                            role="system",
+                            content=(
+                                f"SELF-AUDIT: {n} tool calls this turn. "
+                                f"Specialists activated: {activated}. "
+                                "Verify all required SKILL.md reads "
+                                "are complete before continuing."
+                            ),
+                        )
+                    )
+
+                if tracker.needs_decay_warning():
+                    tracker.mark_decay_warning_injected()
+                    self._history.append(
+                        Message(
+                            role="system",
+                            content=(
+                                "CONTEXT DECAY WARNING: This conversation has exceeded 5 turns. "
+                                "Prefer dispatching subagents (Agent tool) over loading skills "
+                                "(Read SKILL.md) to combat context decay."
+                            ),
+                        )
+                    )
+
                 self._maybe_compact()
                 continue
 

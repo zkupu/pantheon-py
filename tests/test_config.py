@@ -181,9 +181,11 @@ class TestGatewayUrl:
             assert gateway_url() == "http://localhost:8080/v1"
 
     def test_rejects_invalid_gateway_url(self):
-        with patch.dict(os.environ, {"GATEWAY_URL": "not-a-url"}):
-            with pytest.raises(ValueError, match="invalid gateway URL"):
-                gateway_url()
+        with (
+            patch.dict(os.environ, {"GATEWAY_URL": "not-a-url"}),
+            pytest.raises(ValueError, match="invalid gateway URL"),
+        ):
+            gateway_url()
 
 
 class TestApiKey:
@@ -229,10 +231,7 @@ class TestResolveModel:
     def test_sk_key_passes_prefixed_models_through(self):
         with patch.dict(os.environ, {"INFERENCE_API_KEY": "sk-test"}, clear=False):
             os.environ.pop("API_KEY", None)
-            assert (
-                resolve_model("azure/openai/gpt-5.3-codex")
-                == "azure/openai/gpt-5.3-codex"
-            )
+            assert resolve_model("azure/openai/gpt-5.3-codex") == "azure/openai/gpt-5.3-codex"
 
     def test_sk_key_unknown_model_gets_fallback(self):
         with patch.dict(os.environ, {"INFERENCE_API_KEY": "sk-test"}, clear=False):

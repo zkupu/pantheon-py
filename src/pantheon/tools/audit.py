@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import hashlib
 import json
 import logging
@@ -50,10 +51,8 @@ class AuditLogger:
         self._path = p
 
         if platform.system() != "Windows":
-            try:
+            with contextlib.suppress(OSError):
                 p.chmod(stat.S_IRUSR | stat.S_IWUSR)
-            except OSError:
-                pass
 
     def log_call(
         self,

@@ -68,6 +68,32 @@ backwards from the decision that needs to be made.
 - Generated SQL must always be transparent — the user should see exactly what query was run, not just the results
 - Notebook-as-tool patterns: reusable analysis notebooks that can be triggered by other agents or automated workflows
 
+## Output Contract
+
+When dispatched as specialist, return findings in this structure:
+
+### Analysis Summary
+- Question answered
+- Data sources used
+- Time range and scope
+- Key finding (one sentence)
+
+### Findings
+Each finding:
+- **Metric**: what was measured
+- **Value**: the number, with context (baseline, trend, percentile)
+- **Interpretation**: what it means
+- **Confidence**: high / medium / low, with caveats
+- **Action**: recommended next step
+
+### Data Quality Issues
+- Missing data, gaps, or anomalies encountered
+- How they affect the conclusions
+
+### Recommendations
+- Prioritized actions based on findings
+- Additional data needed for deeper analysis
+
 ## Verification
 - Verify query results against source data
 - Flag data quality issues before presenting findings

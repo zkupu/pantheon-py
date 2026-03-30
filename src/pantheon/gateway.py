@@ -103,11 +103,19 @@ class Client:
                 " in your environment, or pass it to Client() directly."
             )
         self.base_url = base_url.rstrip("/")
-        self.api_key = api_key
+        self._api_key = api_key
         self.timeout = timeout
         self.session = requests.Session()
         self.session.headers.update({"Content-Type": "application/json"})
         self.session.headers["Authorization"] = f"Bearer {api_key}"
+
+    @property
+    def api_key(self) -> str:
+        """Return the API key.  Hidden from repr/str to prevent leakage."""
+        return self._api_key
+
+    def __repr__(self) -> str:
+        return f"Client(base_url={self.base_url!r}, api_key='***')"
 
     def close(self) -> None:
         self.session.close()

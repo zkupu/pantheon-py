@@ -30,6 +30,7 @@ class Metadata:
     delegates: list[str] = field(default_factory=list)
     allowed_tools: list[str] = field(default_factory=list)
     routing_signals: list[str] = field(default_factory=list)
+    boost_signals: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -142,6 +143,7 @@ def parse_text(text: str, path: str = "<string>") -> Skill:
         delegates=raw_meta.get("delegates", []) or [],
         allowed_tools=raw_meta.get("allowed_tools", []) or [],
         routing_signals=raw_meta.get("routing_signals", []) or [],
+        boost_signals=raw_meta.get("boost_signals", []) or [],
     )
 
     # compatibility is parsed and stored for future environment-aware filtering
@@ -249,14 +251,17 @@ def classify_agents(
     if non_demeter:
         scored = non_demeter
 
-    _CO_OCCURRENCE_BOOSTS: list[tuple[str, list[str], list[str]]] = [
-        ("mokosh", ["pipeline"], ["authoring", "yaml", "write", "create", "ci/cd"]),
-    ]
-    for agent_name, base_words, boost_words in _CO_OCCURRENCE_BOOSTS:
-        has_base = any(w in task_lower for w in base_words)
-        has_boost = any(w in task_lower for w in boost_words)
-        if has_base and has_boost:
-            scored = [(n, s + 2) if n == agent_name else (n, s) for n, s in scored]
+    # Co-occurrence boosts: if an agent already matched a routing signal
+    # and any of its boost_signals appear in the task, add +2.
+    # Boost signals are defined in each skill's SKILL.md metadata.
+    for i, (name, score) in enumerate(scored):
+        skill = skills.get(name)
+        if (
+            skill
+            and skill.metadata.boost_signals
+            and any(w in task_lower for w in skill.metadata.boost_signals)
+        ):
+            scored[i] = (name, score + 2)
 
     scored.sort(key=lambda x: x[1], reverse=True)
     if min_confidence > 0:

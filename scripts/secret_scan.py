@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import contextlib
 import fnmatch
 import json
 import re
@@ -135,10 +136,8 @@ def main(argv: list[str] | None = None) -> int:
     else:
         for finding in findings:
             rel_path = Path(finding.path)
-            try:
+            with contextlib.suppress(ValueError):
                 rel_path = rel_path.relative_to(root)
-            except ValueError:
-                pass
             print(f"{finding.kind}: {rel_path}:{finding.line}: {finding.preview}")
 
     return 1 if findings else 0

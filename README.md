@@ -16,12 +16,13 @@ The Pantheon is an LLM orchestration toolkit. The bottleneck is never CPU — it
 
 ```text
 src/pantheon/
+  _types.py         Shared datatypes: Message, ChatResponse, Usage, error hierarchy
   config.py         Shared configuration — no duplication, multi-dir discovery
   skill.py          agentskills.io SKILL.md parser, progressive disclosure catalog
   gateway.py        OpenAI-compatible client (replaceable with litellm)
   rate_limit.py     Cross-process request throttling for inference endpoints
   agent.py          Agent runtime: ReAct loop, streaming, context window tracking
-  tools.py          Tool interface, registry, builtins (OS-aware shell)
+  tools/            Tool interface, registry, builtins, shell safety, audit chain
   orchestrate.py    Agent-as-tool, teams, pipelines, weighted review, adaptive topology
   memory.py         File-backed persistence, cross-session search, tiered memory
   observe.py        Structured tracing, cost estimation, budget awareness
@@ -182,7 +183,7 @@ pantheon-py/
 ├── docs/
 │   └── research/        Research papers and technical analysis
 ├── scripts/             Repo utilities, probes, and benchmarks
-├── src/pantheon/        Python source (10 modules)
+├── src/pantheon/        Python source (11 modules + tools subpackage)
 ├── tests/               pytest tests
 ├── pyproject.toml       Modern Python packaging
 ├── CLAUDE.md            Claude Code configuration

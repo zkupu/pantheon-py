@@ -30,6 +30,13 @@ metadata:  # Runtime-only — consumed by the Python CLI, ignored by IDE agents
     - workflow
     - CI/CD pipeline
     - reusable workflow
+  boost_signals:
+    - pipeline
+    - github actions
+    - ansible
+    - workflow
+    - ci
+    - cd
 ---
 
 # Mokosh — Your Steadfast Weaver

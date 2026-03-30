@@ -8,6 +8,7 @@ import os
 import shutil
 import tempfile
 import time
+from collections.abc import Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
@@ -166,7 +167,7 @@ def _is_stale_lock(lock_dir: Path, stale_lock_seconds: int) -> bool:
 
 
 @contextmanager
-def _directory_lock(lock_dir: Path, stale_lock_seconds: int):
+def _directory_lock(lock_dir: Path, stale_lock_seconds: int) -> Iterator[None]:
     while True:
         try:
             lock_dir.mkdir()

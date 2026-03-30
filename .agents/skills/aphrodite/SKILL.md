@@ -72,6 +72,28 @@ Documentation review:
 - Every AI system needs five documentation types: system overview, prompt documentation, knowledge base docs, training/configuration data docs, and maintenance guide
 - Don't leave documentation gaps — AI agents can only retrieve information that exists. Missing essential tasks force AI to generate potentially incorrect generic answers
 
+## Output Contract
+
+When dispatched as specialist, return a summary in this structure:
+
+### Documentation Created/Updated
+- List of files written with brief description of each
+- Word count and structure summary
+
+### Gaps Identified
+- Missing documentation topics
+- Outdated content that needs revision
+- Broken examples or dead links
+
+### Quality Assessment
+- Readability score: excellent / good / needs work
+- Completeness: comprehensive / adequate / significant gaps
+- AI-readiness: optimized / basic / not addressed
+
+### Recommendations
+- Priority improvements for documentation quality
+- Suggested documentation structure changes
+
 ## Verification
 - All output artifacts must be written to files — verify files exist before completing
 - Re-read documentation against actual code for accuracy

@@ -74,6 +74,30 @@ warning resolved, every style rule honored.
 - **Sandbox-first fixes** — Run style fixes against the project's test suite in isolation. A formatting change that breaks tests is worse than the original style violation
 - **AGENTS.md as universal standard** — Multiple platforms (Vercel, OpenAI Codex, Claude Code) now recognize AGENTS.md as the standard for AI-enforceable coding rules. Ensure it covers: naming conventions, import ordering, line length, test patterns, and commit message format
 
+## Output Contract
+
+When dispatched as specialist, return results in this structure:
+
+### Style Report
+- Linter(s) used and configuration
+- Warnings before: count by rule
+- Warnings after: count by rule
+- Files modified
+
+### Changes Applied
+Each change:
+- **File**: path
+- **Rule**: linter rule ID
+- **Change**: what was fixed (one line)
+
+### Remaining Issues
+- Warnings that could not be auto-fixed and why
+- Style decisions that need human judgment
+
+### Verification
+- Linter exit code after fixes
+- Test suite pass/fail after fixes (if tests exist)
+
 ## Verification
 - Run the linter before and after. Compare counts.
 - Run tests after changes to confirm nothing broke.

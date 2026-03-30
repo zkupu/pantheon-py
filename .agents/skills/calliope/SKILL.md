@@ -75,6 +75,57 @@ Debugging prompts:
   4. **Commit** — Only ship prompts that measurably improve over baseline
 - Cost-per-quality is the primary optimization axis: a prompt that achieves 95% accuracy on a $0.01/call model beats 97% accuracy on a $0.15/call model for most production use cases
 
+## Output Contract
+
+When dispatched as specialist, return findings in this structure:
+
+### Prompt Review Summary
+- Number of prompts/instructions reviewed
+- Overall quality: strong / adequate / weak
+- Most critical issue requiring immediate attention
+
+### Findings
+Each finding:
+- **Location**: file path and section
+- **Issue**: what's wrong or suboptimal
+- **Impact**: how this affects output quality, cost, or reliability
+- **Fix**: concrete rewrite or structural change
+- **Test case**: input that demonstrates the issue
+
+### Context Engineering Assessment
+- Context management strategy: effective / at risk / missing
+- Decay vectors identified
+- Recommendations for context resilience
+
+### Model Selection Review (if applicable)
+- Current model vs. recommended model
+- Cost-per-quality analysis
+- Trade-offs
+
+## Bad Output (Do Not Produce)
+
+**Bad — identifies a prompt issue without a test case to prove it:**
+```
+### Findings
+- **Location**: .agents/skills/kali/SKILL.md, Methodology section
+- **Issue**: The STRIDE instructions could be clearer.
+- **Fix**: Rewrite the STRIDE section to be more specific.
+```
+
+**Good — specific issue with concrete fix and a test case:**
+```
+### Findings
+- **Location**: .agents/skills/kali/SKILL.md, Methodology step 3
+- **Issue**: STRIDE step says "Per component" but doesn't define what counts as a
+  component. Models interpret this inconsistently — sometimes per-file, sometimes
+  per-module, sometimes per-function.
+- **Impact**: Produces either 3 superficial findings or 50 granular ones, neither useful.
+- **Fix**: Replace "Per component" with "Per trust boundary crossing (see step 2
+  output). Group related files into a single component when they share a trust level."
+- **Test case**: Input "Review src/pantheon/tools/" — should produce one STRIDE
+  analysis for the tools subsystem, not separate analyses for each tool file.
+```
+
 ## Verification
 - Every prompt ships with test cases (input → expected output)
 - Verify prompts produce correct output on test cases before delivering

@@ -13,24 +13,18 @@ import sys
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
+_src_dir = str(Path(__file__).resolve().parent.parent / "src")
+if _src_dir not in sys.path:
+    sys.path.insert(0, _src_dir)
+
+from pantheon.config import repo_root  # noqa: E402
+
 
 @dataclass
 class CheckResult:
     name: str
     status: str
     detail: str
-
-
-def find_repo_root(start: str | Path | None = None) -> Path | None:
-    """Walk upward until the Pantheon repository root is found."""
-    current = Path(start or Path.cwd()).resolve()
-    if current.is_file():
-        current = current.parent
-
-    for candidate in (current, *current.parents):
-        if (candidate / "pyproject.toml").exists() and (candidate / ".agents" / "skills").is_dir():
-            return candidate
-    return None
 
 
 def load_env_file(root: Path | None) -> Path | None:
@@ -42,20 +36,11 @@ def load_env_file(root: Path | None) -> Path | None:
     if not env_path.exists():
         return env_path
 
-    src_dir = str(root / "src")
-    inserted = False
-    if src_dir not in sys.path:
-        sys.path.insert(0, src_dir)
-        inserted = True
-    try:
-        from pantheon.config import parse_env_file
+    from pantheon.config import parse_env_file
 
-        for key, value in parse_env_file(env_path).items():
-            if key and not os.environ.get(key):
-                os.environ[key] = value
-    finally:
-        if inserted:
-            sys.path.remove(src_dir)
+    for key, value in parse_env_file(env_path).items():
+        if key and not os.environ.get(key):
+            os.environ[key] = value
 
     return env_path
 
@@ -366,20 +351,20 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     if args.command == "check":
-        root = find_repo_root()
+        root = repo_root()
         results = run_checks(
             root=root,
             require_gateway=args.require_gateway,
             require_skillgrade=args.require_skillgrade,
         )
     elif args.command == "claude-code":
-        root = find_repo_root()
+        root = repo_root()
         results = check_claude_code(root)
     elif args.command == "protocol":
-        root = find_repo_root()
+        root = repo_root()
         results = check_protocol_consistency(root)
     elif args.command == "audit":
-        root = find_repo_root()
+        root = repo_root()
         if root is not None:
             src_dir = str(root / "src")
             if src_dir not in sys.path:

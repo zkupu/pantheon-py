@@ -13,40 +13,49 @@ from pantheon.skill import Metadata, Skill, classify_agents
 
 class TestArgParsing:
     def test_list_command(self):
-        with patch("sys.argv", ["pantheon", "list"]):
-            with patch.object(cli, "cmd_list") as mock:
-                cli.main()
-                mock.assert_called_once()
+        with patch("sys.argv", ["pantheon", "list"]), patch.object(cli, "cmd_list") as mock:
+            cli.main()
+            mock.assert_called_once()
 
     def test_ask_command(self):
-        with patch("sys.argv", ["pantheon", "ask", "athena", "hello", "world"]):
-            with patch.object(cli, "cmd_ask") as mock:
-                cli.main()
-                mock.assert_called_once_with("athena", "hello world")
+        with (
+            patch("sys.argv", ["pantheon", "ask", "athena", "hello", "world"]),
+            patch.object(cli, "cmd_ask") as mock,
+        ):
+            cli.main()
+            mock.assert_called_once_with("athena", "hello world")
 
     def test_run_command(self):
-        with patch("sys.argv", ["pantheon", "run", "kali", "audit", "code"]):
-            with patch.object(cli, "cmd_run") as mock:
-                cli.main()
-                mock.assert_called_once_with("kali", "audit code")
+        with (
+            patch("sys.argv", ["pantheon", "run", "kali", "audit", "code"]),
+            patch.object(cli, "cmd_run") as mock,
+        ):
+            cli.main()
+            mock.assert_called_once_with("kali", "audit code")
 
     def test_team_command(self):
-        with patch("sys.argv", ["pantheon", "team", "freya", "do", "stuff"]):
-            with patch.object(cli, "cmd_team") as mock:
-                cli.main()
-                mock.assert_called_once_with("freya", "do stuff")
+        with (
+            patch("sys.argv", ["pantheon", "team", "freya", "do", "stuff"]),
+            patch.object(cli, "cmd_team") as mock,
+        ):
+            cli.main()
+            mock.assert_called_once_with("freya", "do stuff")
 
     def test_pipe_command(self):
-        with patch("sys.argv", ["pantheon", "pipe", "a,b,c", "go"]):
-            with patch.object(cli, "cmd_pipe") as mock:
-                cli.main()
-                mock.assert_called_once_with("a,b,c", "go")
+        with (
+            patch("sys.argv", ["pantheon", "pipe", "a,b,c", "go"]),
+            patch.object(cli, "cmd_pipe") as mock,
+        ):
+            cli.main()
+            mock.assert_called_once_with("a,b,c", "go")
 
     def test_review_command(self):
-        with patch("sys.argv", ["pantheon", "review", "a,b,c", "check"]):
-            with patch.object(cli, "cmd_review") as mock:
-                cli.main()
-                mock.assert_called_once_with("a,b,c", "check")
+        with (
+            patch("sys.argv", ["pantheon", "review", "a,b,c", "check"]),
+            patch.object(cli, "cmd_review") as mock,
+        ):
+            cli.main()
+            mock.assert_called_once_with("a,b,c", "check")
 
     def test_no_command_opens_warroom(self):
         with patch("sys.argv", ["pantheon"]), patch.object(cli, "cmd_warroom") as mock:
@@ -100,10 +109,12 @@ class TestGetAgent:
 
 class TestAgentLoading:
     def test_agents_exit_cleanly_when_api_key_is_missing(self):
-        with patch.object(cli, "_client", side_effect=ValueError("API key is required")):
-            with patch.object(cli.console, "print") as mock_print:
-                with pytest.raises(SystemExit):
-                    cli._agents()
+        with (
+            patch.object(cli, "_client", side_effect=ValueError("API key is required")),
+            patch.object(cli.console, "print") as mock_print,
+            pytest.raises(SystemExit),
+        ):
+            cli._agents()
 
         assert "API key is required" in mock_print.call_args[0][0]
 
@@ -174,10 +185,12 @@ class TestCmdChat:
         ]
         store.save(sid, saved)
 
-        with patch.object(cli, "_agents", return_value={"athena": agent}):
-            with patch.object(cli.config, "memory_dir", return_value=str(tmp_path)):
-                with patch("builtins.input", side_effect=["/quit"]):
-                    cli.cmd_chat("athena")
+        with (
+            patch.object(cli, "_agents", return_value={"athena": agent}),
+            patch.object(cli.config, "memory_dir", return_value=str(tmp_path)),
+            patch("builtins.input", side_effect=["/quit"]),
+        ):
+            cli.cmd_chat("athena")
 
         assert [m.role for m in agent.history] == ["system", "user", "assistant"]
         assert agent.history[1].content == "hello"
@@ -220,9 +233,11 @@ class TestCmdTeam:
 
     def test_team_no_delegates_exits(self, tmp_agent):
         coord = tmp_agent("freya", reply="done", delegates=[])
-        with patch.object(cli, "_agents", return_value={"freya": coord}):
-            with pytest.raises(SystemExit):
-                cli.cmd_team("freya", "go")
+        with (
+            patch.object(cli, "_agents", return_value={"freya": coord}),
+            pytest.raises(SystemExit),
+        ):
+            cli.cmd_team("freya", "go")
 
 
 class TestCmdPipe:
@@ -384,10 +399,12 @@ class TestClassifyAgents:
 
 class TestCmdAuto:
     def test_auto_arg_parsing(self):
-        with patch("sys.argv", ["pantheon", "auto", "review", "security"]):
-            with patch.object(cli, "cmd_auto") as mock:
-                cli.main()
-                mock.assert_called_once()
+        with (
+            patch("sys.argv", ["pantheon", "auto", "review", "security"]),
+            patch.object(cli, "cmd_auto") as mock,
+        ):
+            cli.main()
+            mock.assert_called_once()
 
     def test_auto_dry_run_no_execute(self, tmp_agent):
         agent = tmp_agent("kali", reply="audit", tools=["read_file"], routing_signals=["security"])
@@ -463,9 +480,11 @@ class TestWarRoom:
             "eris": tmp_agent("eris", reply="chaos"),
         }
 
-        with patch.object(cli, "_agents", return_value=agents):
-            with patch("builtins.input", side_effect=["/list", "/quit"]):
-                cli.cmd_warroom()
+        with (
+            patch.object(cli, "_agents", return_value=agents),
+            patch("builtins.input", side_effect=["/list", "/quit"]),
+        ):
+            cli.cmd_warroom()
 
     def test_broadcast_collects_all_replies(self, tmp_agent):
         agents = {
@@ -473,9 +492,11 @@ class TestWarRoom:
             "eris": tmp_agent("eris", reply="chaos"),
         }
 
-        with patch.object(cli, "_agents", return_value=agents):
-            with patch("builtins.input", side_effect=["/all hello", "/quit"]):
-                cli.cmd_warroom()
+        with (
+            patch.object(cli, "_agents", return_value=agents),
+            patch("builtins.input", side_effect=["/all hello", "/quit"]),
+        ):
+            cli.cmd_warroom()
 
         assert agents["athena"].client.chat.called
         assert agents["eris"].client.chat.called

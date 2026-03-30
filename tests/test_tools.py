@@ -14,14 +14,13 @@ from pantheon.tools import (
     Registry,
     SearchFiles,
     WriteFile,
-    _default_auditor,
-    _get_last_hash,
-    _validate_args,
     builtins,
     check_required,
     strict_schema,
     verify_audit_chain,
 )
+from pantheon.tools.audit import _default_auditor, _get_last_hash
+from pantheon.tools.base import _validate_args
 from tests.echo_tool import EchoTool
 
 
@@ -207,13 +206,15 @@ class TestPathRestrictions:
             assert tool.execute({"path": str(f)}) == "allowed"
 
     def test_read_file_blocked(self):
-        with tempfile.TemporaryDirectory() as allowed:
-            with tempfile.TemporaryDirectory() as blocked:
-                f = Path(blocked) / "secret.txt"
-                f.write_text("secret")
-                tool = ReadFile(allowed_roots=[allowed])
-                result = tool.execute({"path": str(f)})
-                assert "outside allowed roots" in result
+        with (
+            tempfile.TemporaryDirectory() as allowed,
+            tempfile.TemporaryDirectory() as blocked,
+        ):
+            f = Path(blocked) / "secret.txt"
+            f.write_text("secret")
+            tool = ReadFile(allowed_roots=[allowed])
+            result = tool.execute({"path": str(f)})
+            assert "outside allowed roots" in result
 
     def test_write_file_allowed(self):
         with tempfile.TemporaryDirectory() as d:
@@ -223,13 +224,15 @@ class TestPathRestrictions:
             assert "wrote" in result
 
     def test_write_file_blocked(self):
-        with tempfile.TemporaryDirectory() as allowed:
-            with tempfile.TemporaryDirectory() as blocked:
-                path = str(Path(blocked) / "hack.txt")
-                tool = WriteFile(allowed_roots=[allowed])
-                result = tool.execute({"path": path, "content": "nope"})
-                assert "outside allowed roots" in result
-                assert not Path(path).exists()
+        with (
+            tempfile.TemporaryDirectory() as allowed,
+            tempfile.TemporaryDirectory() as blocked,
+        ):
+            path = str(Path(blocked) / "hack.txt")
+            tool = WriteFile(allowed_roots=[allowed])
+            result = tool.execute({"path": path, "content": "nope"})
+            assert "outside allowed roots" in result
+            assert not Path(path).exists()
 
     def test_no_restriction_allows_all(self):
         with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
