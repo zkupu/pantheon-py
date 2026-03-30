@@ -1,6 +1,6 @@
 # Repo Separation Plan: pantheon-py + pantheon
 
-**Status:** Draft
+**Status:** Approved
 **Date:** 2026-03-29
 **Goal:** Split the monorepo into two independent repositories so the persona/skills layer is portable and the Python runtime stands alone.
 
@@ -60,7 +60,11 @@ Each wave is a set of tasks that can run in parallel across separate Claude sess
 #### Task 0.2: Design the bridge mechanism
 - Add `PANTHEON_AGENTS_DIR` env var support to `pantheon-py` config (already partially exists as `SKILLS_DIR`)
 - Document the contract: pantheon-py expects a directory containing `.agents/skills/` and `.agents/subagents/`
-- Decide: git submodule, symlink, or env var as primary integration. Recommendation: **env var as primary, submodule as dev convenience**
+- **Decision: external-only. No bundling.** Integration options for users:
+  1. `PANTHEON_AGENTS_DIR` env var (primary)
+  2. Git submodule at `.agents/` (dev convenience)
+  3. Symlink `.agents/` to a local checkout
+- Document all three options with clear setup instructions in `pantheon-py` README
 
 ---
 
@@ -113,14 +117,14 @@ All tasks in this wave are independent and can run in parallel.
 - Move to `pantheon/docs/`:
   - Any docs that describe the skill system, persona framework, or agent routing
   - `docs/research/instruction-decay.md` (about prompt/instruction behavior, not runtime)
+  - `docs/workflows.md` (workflow templates that invoke Pantheon specialists)
+  - `docs/design/embedding-routing.md` (routing model design, persona concern)
 - Keep in `pantheon-py/docs/`:
   - `cli-reference.md` -- runtime CLI
   - `configuration-reference.md` -- runtime config
   - `runtime-reference.md` -- runtime API
   - `troubleshooting.md` -- runtime troubleshooting
-  - `workflows.md` -- review for split (may have content for both repos)
   - `docs/design/async-support.md` -- runtime design
-  - `docs/design/embedding-routing.md` -- review (may belong in pantheon)
   - `docs/design/sqlite-memory.md` -- runtime design
 
 ---
@@ -133,17 +137,15 @@ All tasks in this wave are independent and can run in parallel.
 - Refactor `skills_dir()` to resolve skills via:
   1. `PANTHEON_AGENTS_DIR` env var (points to pantheon repo checkout)
   2. `SKILLS_DIR` env var (legacy, direct path to skills)
-  3. Git submodule at `.agents/` (if present)
-  4. Bundled `_bundled_skills` fallback (for installed wheel)
+  3. Git submodule or symlink at `.agents/` (if present)
+- **Remove `_BUNDLED_SKILLS_DIR` and all bundled-skills fallback logic**
 - Update repo root detection to not depend on `.agents/skills` existing
-- Add clear error message when no skills source is found
+- Add clear error message when no skills source is found, with setup instructions
 
 #### Task 2.2: Update `pyproject.toml` build config
-- Remove or conditionalize the `.agents/skills` bundling in `[tool.hatch.build.targets.wheel.force-include]`
-- Option A: Remove bundling entirely, require external skills dir
-- Option B: Keep bundling but source from configurable path (for self-contained wheel builds)
-- Update sdist includes to remove `.agents/` references
-- Recommendation: **Option B** -- bundle from `PANTHEON_AGENTS_DIR` if set, skip if not
+- **Remove** `.agents/skills` bundling from `[tool.hatch.build.targets.wheel.force-include]`
+- **Remove** `.agents/` from `[tool.hatch.build.targets.sdist]` includes
+- Skills are external-only -- the wheel ships without them
 
 #### Task 2.3: Update Makefile and tasks.py
 - Remove or conditionalize `.agents/skills/` from lint targets
@@ -187,8 +189,9 @@ Sequential -- run after Waves 1 and 2 are both complete.
 #### Task 3.2: Validate `pantheon-py` with external skills
 - Set `PANTHEON_AGENTS_DIR` to point at `pantheon/` checkout
 - Run full test suite: `make check`
-- Build wheel and verify it works with and without bundled skills
+- Build wheel and verify it works (no bundled skills)
 - Run `doctor.py` and verify it reports correct status
+- Verify clear error when no skills source is configured
 
 #### Task 3.3: Validate `pantheon-py` with submodule
 - Add `pantheon` as git submodule at `.agents/`
@@ -229,12 +232,10 @@ For kicking off parallel Claude sessions:
 
 **Maximum parallelism: 6 sessions** (B, C, D, E, F, G all running simultaneously after Wave 0 completes)
 
-## Open Decisions
+## Resolved Decisions
 
-These should be resolved before or during Wave 0:
-
-1. **Repo name**: `pantheon` vs `pantheon-agents` vs something else
-2. **Bundling strategy**: Should the `pantheon-py` wheel continue to bundle skills, or require external dir?
-3. **Eval suite ownership**: Evals test skills (persona repo) but use Python tooling (runtime repo). Clean split or shared?
-4. **`embedding-routing.md`**: Runtime concern or persona concern? Needs review.
-5. **`workflows.md`**: May contain content for both repos. Needs review and possible split.
+1. **Repo name**: `pantheon`
+2. **Bundling strategy**: External-only. No skill bundling in the wheel. Users integrate via env var, submodule, or symlink.
+3. **Eval suite ownership**: Moves entirely to `pantheon` -- evals test skill content, not runtime behavior.
+4. **`embedding-routing.md`**: Moves to `pantheon` -- routing model is a persona concern; pantheon-py implements it.
+5. **`workflows.md`**: Moves to `pantheon` -- pure specialist workflow templates, no runtime content.
