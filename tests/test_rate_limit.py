@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import time
 from unittest.mock import MagicMock
 
 import pytest
@@ -115,3 +116,91 @@ def test_gateway_chat_respects_the_rate_limit_budget(monkeypatch, tmp_path):
     with pytest.raises(RateLimitExceededError, match="request budget exhausted"):
         client.chat(model="test-model", messages=[Message(role="user", content="again")])
     assert client.session.post.call_count == 1
+
+
+def test_per_minute_window_blocks_when_full(monkeypatch, tmp_path):
+    """Per-minute window blocks after limit is reached, then unblocks after sliding."""
+    monkeypatch.setenv("INFERENCE_RATE_LIMIT_STATE_DIR", str(tmp_path))
+    monkeypatch.setenv("INFERENCE_RATE_LIMIT_PER_SECOND", "100")
+    monkeypatch.setenv("INFERENCE_RATE_LIMIT_PER_MINUTE", "3")
+    monkeypatch.setenv("INFERENCE_RATE_LIMIT_PER_HOUR", "10000")
+    monkeypatch.setenv("INFERENCE_RATE_LIMIT_PER_DAY", "100000")
+
+    fake_clock = _FakeClock()
+    monkeypatch.setattr("pantheon.rate_limit.time.time", fake_clock.time)
+    monkeypatch.setattr("pantheon.rate_limit.time.sleep", fake_clock.sleep)
+
+    url = "https://minute-test.test/v1"
+    for _ in range(3):
+        acquire_rate_limit(url, "key")
+
+    # 4th call should require a sleep (minute window full)
+    acquire_rate_limit(url, "key")
+    assert fake_clock.sleeps, "expected a sleep when minute window is full"
+    # Sleep should be <= 60s (slides within the minute window)
+    assert fake_clock.sleeps[-1] <= 60.0
+
+
+def test_per_hour_window_blocks_when_full(monkeypatch, tmp_path):
+    """Per-hour window blocks after limit is reached."""
+    monkeypatch.setenv("INFERENCE_RATE_LIMIT_STATE_DIR", str(tmp_path))
+    monkeypatch.setenv("INFERENCE_RATE_LIMIT_PER_SECOND", "100")
+    monkeypatch.setenv("INFERENCE_RATE_LIMIT_PER_MINUTE", "100")
+    monkeypatch.setenv("INFERENCE_RATE_LIMIT_PER_HOUR", "2")
+    monkeypatch.setenv("INFERENCE_RATE_LIMIT_PER_DAY", "100000")
+
+    fake_clock = _FakeClock()
+    monkeypatch.setattr("pantheon.rate_limit.time.time", fake_clock.time)
+    monkeypatch.setattr("pantheon.rate_limit.time.sleep", fake_clock.sleep)
+
+    url = "https://hour-test.test/v1"
+    acquire_rate_limit(url, "key")
+    acquire_rate_limit(url, "key")
+
+    # 3rd call should block on the hour window
+    acquire_rate_limit(url, "key")
+    assert fake_clock.sleeps, "expected a sleep when hour window is full"
+    assert fake_clock.sleeps[-1] <= 3600.0
+
+
+def test_per_day_window_blocks_when_full(monkeypatch, tmp_path):
+    """Per-day window blocks after limit is reached."""
+    monkeypatch.setenv("INFERENCE_RATE_LIMIT_STATE_DIR", str(tmp_path))
+    monkeypatch.setenv("INFERENCE_RATE_LIMIT_PER_SECOND", "100")
+    monkeypatch.setenv("INFERENCE_RATE_LIMIT_PER_MINUTE", "100")
+    monkeypatch.setenv("INFERENCE_RATE_LIMIT_PER_HOUR", "100")
+    monkeypatch.setenv("INFERENCE_RATE_LIMIT_PER_DAY", "2")
+
+    fake_clock = _FakeClock()
+    monkeypatch.setattr("pantheon.rate_limit.time.time", fake_clock.time)
+    monkeypatch.setattr("pantheon.rate_limit.time.sleep", fake_clock.sleep)
+
+    url = "https://day-test.test/v1"
+    acquire_rate_limit(url, "key")
+    acquire_rate_limit(url, "key")
+
+    acquire_rate_limit(url, "key")
+    assert fake_clock.sleeps, "expected a sleep when day window is full"
+    assert fake_clock.sleeps[-1] <= 86400.0
+
+
+def test_stale_lock_recovery(monkeypatch, tmp_path):
+    """A stale lock directory is automatically removed so acquisition proceeds."""
+    _configure_limits(monkeypatch, tmp_path, per_second=10)
+    monkeypatch.setenv("INFERENCE_RATE_LIMIT_STALE_LOCK_SECONDS", "1")
+
+    from pantheon.rate_limit import _bucket_name
+
+    bucket = _bucket_name("https://stale.test/v1", "key")
+    state_path = tmp_path / f"{bucket}.json"
+    lock_dir = state_path.with_name(f"{state_path.name}.lock")
+
+    # Create a stale lock directory with an old mtime
+    import os
+
+    lock_dir.mkdir(parents=True)
+    old_time = time.time() - 10  # 10 seconds ago, well past the 1s stale threshold
+    os.utime(str(lock_dir), (old_time, old_time))
+
+    # Should succeed despite the stale lock
+    acquire_rate_limit("https://stale.test/v1", "key")

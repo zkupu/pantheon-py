@@ -65,4 +65,4 @@ max-complexity = 15
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "--cov=pantheon --cov-report=term-missing --cov-fail-under=40"
+addopts = "--cov=pantheon --cov-report=term-missing --cov-fail-under=80"

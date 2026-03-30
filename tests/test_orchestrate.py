@@ -372,10 +372,18 @@ class TestWeightAwareTruncation:
 
         messages = synth.client.chat.call_args[1]["messages"]
         prompt = next(m for m in messages if m.role == "user").content
-        split_marker = '<agent_output name="light"'
-        heavy_section = prompt.split(split_marker)[0]
-        light_section = prompt.split(split_marker)[1] if split_marker in prompt else ""
-        assert len(heavy_section) > len(light_section)
+        # Extract only the agent_output block contents, not surrounding prompt text
+        import re
+
+        outputs = {
+            m.group(1): m.group(2)
+            for m in re.finditer(
+                r'<agent_output name="(\w+)"[^>]*>(.*?)</agent_output>',
+                prompt,
+                re.DOTALL,
+            )
+        }
+        assert len(outputs["heavy"]) > len(outputs["light"])
 
     def test_minimum_char_floor_prevents_erasure(self, tmp_agent):
         heavy = tmp_agent("heavy", reply="H" * 10000)

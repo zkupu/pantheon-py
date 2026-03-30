@@ -468,6 +468,59 @@ class TestEquipTools:
         assert a.tools.get("other") is None
 
 
+class TestMalformedToolCalls:
+    def test_malformed_json_arguments_handled_gracefully(self, tmp_skill):
+        """When the LLM returns invalid JSON in tool call arguments, the agent
+        should continue the loop and return an error message to the model."""
+        tool_resp = ChatResponse(
+            content="",
+            usage=Usage(1, 1, 2),
+            tool_calls=[
+                {
+                    "id": "tc-bad",
+                    "type": "function",
+                    "function": {"name": "echo", "arguments": "{not valid json!!!"},
+                }
+            ],
+        )
+        final_resp = ChatResponse(content="recovered", usage=Usage(1, 1, 2))
+        client = _client_returning(tool_resp, final_resp)
+
+        a = Agent(tmp_skill(tools=["echo"]), client)
+        a.tools.register(EchoTool())
+
+        result = a.run("test")
+        assert result == "recovered"
+        # The tool result message should contain an error
+        tool_msgs = [m for m in a.history if m.role == "tool"]
+        assert any("error" in m.content.lower() for m in tool_msgs)
+
+    def test_empty_arguments_treated_as_empty_dict(self, tmp_skill):
+        """Empty arguments string should be parsed as {} and execute normally."""
+        tool_resp = ChatResponse(
+            content="",
+            usage=Usage(1, 1, 2),
+            tool_calls=[
+                {
+                    "id": "tc-empty",
+                    "type": "function",
+                    "function": {"name": "echo", "arguments": ""},
+                }
+            ],
+        )
+        final_resp = ChatResponse(content="done", usage=Usage(1, 1, 2))
+        client = _client_returning(tool_resp, final_resp)
+
+        a = Agent(tmp_skill(tools=["echo"]), client)
+        a.tools.register(EchoTool())
+
+        result = a.run("test")
+        assert result == "done"
+        # Tool was executed (got a tool result, even if it's an error about missing fields)
+        tool_msgs = [m for m in a.history if m.role == "tool"]
+        assert len(tool_msgs) == 1
+
+
 class TestContextDecayInjection:
     """Tests for 2A — context decay reminders injected into the ReAct loop."""
 
